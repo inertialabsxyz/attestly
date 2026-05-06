@@ -62,7 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn format_status(status: &AttestationStatus) -> String {
     match status {
         AttestationStatus::Completed => "Completed".to_string(),
-        AttestationStatus::Failed { reason } => format!("Failed {{ reason: {reason:?} }}"),
+        AttestationStatus::Failed(reason) => format!("Failed({reason:?})"),
         AttestationStatus::Verified {
             attestation_valid,
             answer_correct,

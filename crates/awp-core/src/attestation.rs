@@ -17,13 +17,15 @@ use uuid::Uuid;
 use crate::signing::verify_attestation_signature;
 
 /// All possible terminal states for an attestation.
+///
+/// Uses serde's default externally-tagged representation so the tuple
+/// variant `Failed(String)` serializes as `{"Failed":"..."}` — the
+/// internally-tagged form (`tag = "kind"`) cannot encode tuple variants
+/// containing primitives.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
 pub enum AttestationStatus {
     Completed,
-    Failed {
-        reason: String,
-    },
+    Failed(String),
     Verified {
         /// Cryptographic check: signature + hashes verified.
         attestation_valid: bool,

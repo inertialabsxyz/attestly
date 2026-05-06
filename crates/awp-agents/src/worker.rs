@@ -48,7 +48,7 @@ impl WorkerTask {
 }
 
 /// Errors a Worker can return. A failed tool execution still yields an
-/// attestation (with `AttestationStatus::Failed`); only signing/io
+/// attestation (with `AttestationStatus::Failed(reason)`); only signing/io
 /// problems surface here.
 #[derive(Debug, Error)]
 pub enum WorkerError {
@@ -102,7 +102,7 @@ pub trait WorkerAgent {
 impl WorkerAgent for Worker {
     /// Execute the task via the `calculate` tool, then build and sign an
     /// attestation. Tool failures are folded into
-    /// `AttestationStatus::Failed { reason }` so downstream readers always
+    /// `AttestationStatus::Failed(reason)` so downstream readers always
     /// see a signed record of what happened.
     async fn run(&self, task: &WorkerTask) -> Result<Attestation, WorkerError> {
         let task_hash = sha256(task.canonical_bytes());
@@ -110,12 +110,7 @@ impl WorkerAgent for Worker {
 
         let (output, status) = match calculate(&task.expression) {
             Ok(r) => (format_result(r.result), AttestationStatus::Completed),
-            Err(e) => (
-                String::new(),
-                AttestationStatus::Failed {
-                    reason: e.to_string(),
-                },
-            ),
+            Err(e) => (String::new(), AttestationStatus::Failed(e.to_string())),
         };
 
         let mut a = Attestation::new(
@@ -171,7 +166,7 @@ mod tests {
         let w = Worker::new("worker-1").with_clock(|| 1_700_000_000);
         let task = WorkerTask::new("not an expression");
         let att = w.run(&task).await.unwrap();
-        assert!(matches!(att.status, AttestationStatus::Failed { .. }));
+        assert!(matches!(att.status, AttestationStatus::Failed(_)));
         assert!(verify_attestation_signature(&att));
     }
 
