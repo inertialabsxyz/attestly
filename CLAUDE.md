@@ -11,7 +11,7 @@ Market context: [`awp-market-research.md`](awp-market-research.md).
 
 ## Status
 
-Pre-implementation. The repo currently contains planning docs and agent-workflow conventions — no source code yet. The 8-week prototype plan lives in [`awp-prototype-plan.md`](awp-prototype-plan.md); read it before starting any implementation work, since it defines phase boundaries, exit criteria, and the intended Cargo workspace layout (`crates/awp-core`, `crates/awp-agents`).
+Pre-implementation. The repo currently contains planning docs and agent-workflow conventions — no source code yet. The 8-week prototype plan lives in [`planning/awp-prototype-plan.md`](planning/awp-prototype-plan.md); read it before starting any implementation work, since it defines phase boundaries, exit criteria, and the intended Cargo workspace layout (`crates/awp-core`, `crates/awp-agents`). Per-phase dispatch prompts live in [`planning/agent-prompts.md`](planning/agent-prompts.md).
 
 ## Stack (per the prototype plan)
 
@@ -21,7 +21,7 @@ Pre-implementation. The repo currently contains planning docs and agent-workflow
 - **Storage:** SQLite (`rusqlite`) under `./data/`
 - **Chain integration:** deferred to Phase 2
 
-If a dependency choice isn't covered by `awp-prototype-plan.md`, ask before adding it.
+If a dependency choice isn't covered by `planning/awp-prototype-plan.md`, ask before adding it.
 
 ## Working agreements
 
@@ -35,7 +35,7 @@ These are hard rules for any agent making changes. Read each before your first c
 
 ## Operating notes
 
-- **Planning docs are the source of truth for requirements.** When in doubt, point to the section of `awp-prototype-plan.md` that drives the work, not to inferred conventions.
+- **Planning docs are the source of truth for requirements.** When in doubt, point to the section of `planning/awp-prototype-plan.md` that drives the work, not to inferred conventions.
 - **The `make check` gate doesn't exist yet** — there's no `Makefile` until the first crate lands. The first implementation PR should add it (running `cargo fmt --check`, `cargo clippy -D warnings`, and `cargo test`) so subsequent agents have a real gate to honour.
 - **Runtime outputs go in `./data/`** and stay out of git. Add `.gitignore` entries (`data/`, `attestations.json`, `target/`) the first time they're produced.
 - **Don't invent scope.** If the prototype plan defers something to Phase 2 (on-chain anchoring, identity registration, HTTP API), don't pull it forward without an explicit ask.

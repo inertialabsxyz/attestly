@@ -11,7 +11,8 @@ When agents work on your behalf, you need receipts — not just results.
 Pre-implementation. The repository currently contains planning and design docs:
 
 - [`awp-landing-page-v2.md`](awp-landing-page-v2.md) — pitch, architecture, FAQ
-- [`awp-prototype-plan.md`](awp-prototype-plan.md) — 8-week prototype plan (Worker → Verifier → Dispatcher → Batching)
+- [`planning/awp-prototype-plan.md`](planning/awp-prototype-plan.md) — 8-week prototype plan (Worker → Verifier → Dispatcher → Batching)
+- [`planning/agent-prompts.md`](planning/agent-prompts.md) — per-phase Claude Code dispatch prompts
 - [`awp-market-research.md`](awp-market-research.md) — landscape and positioning
 
 A working Worker–Verifier prototype is the starting point for Phase 1. On-chain anchoring is deferred to Phase 2.
@@ -46,7 +47,7 @@ Not a token. Not a DAO. Not on-chain AI. Not a reputation score.
 
 ## Stack
 
-Rust, [AutoAgents](https://github.com/liquidos-ai/AutoAgents), Ed25519, Merkle trees, SQLite. See [`awp-prototype-plan.md`](awp-prototype-plan.md) for the full breakdown and weekly milestones.
+Rust, [AutoAgents](https://github.com/liquidos-ai/AutoAgents), Ed25519, Merkle trees, SQLite. See [`planning/awp-prototype-plan.md`](planning/awp-prototype-plan.md) for the full breakdown and weekly milestones.
 
 ## Contributing
 
