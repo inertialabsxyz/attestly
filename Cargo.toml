@@ -1,0 +1,35 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/awp-core",
+    "crates/awp-agents",
+    "crates/awp-examples",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/inertialabsxyz/awp"
+
+[workspace.dependencies]
+awp-core = { path = "crates/awp-core" }
+awp-agents = { path = "crates/awp-agents" }
+
+ed25519-dalek = { version = "2.1", features = ["rand_core"] }
+sha2 = "0.10"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_bytes = "0.11"
+uuid = { version = "1", features = ["v4", "serde"] }
+hex = "0.4"
+rand = "0.8"
+thiserror = "2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time"] }
+async-trait = "0.1"
+tempfile = "3"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
