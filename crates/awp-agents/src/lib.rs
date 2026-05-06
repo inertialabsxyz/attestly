@@ -8,3 +8,7 @@ pub mod dispatcher;
 pub mod tools;
 pub mod verifier;
 pub mod worker;
+
+pub use tools::{calculate, verify_attestation, verify_attestation_struct, VerificationResult};
+pub use verifier::{Verifier, VerifierAgent, VerifierError};
+pub use worker::{Worker, WorkerAgent, WorkerError, WorkerTask};
