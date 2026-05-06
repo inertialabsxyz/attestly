@@ -74,15 +74,15 @@ can retry; the in-memory attestation is unaffected. There is no half-state
 where signing partially succeeded.
 
 For tool-level partial failures (the calculator rejects bad input),
-`AttestationStatus::Failed { reason }` is emitted and *that* is signed — the
+`AttestationStatus::Failed(reason)` is emitted and *that* is signed — the
 agent always produces a record of what happened, never silently swallows the
 error.
 
 **Open edge case:** if `Worker::run()` panics between executing the tool and
 signing the attestation, no record is produced. Production-quality handling
-would catch panics and emit `Failed { reason: "agent panicked" }`, but
-the prototype plan's "Production error handling (prototype quality
-acceptable)" deferral covers this. Flag it for Phase 4 if it bites.
+would catch panics and emit `Failed("agent panicked")`, but the prototype
+plan's "Production error handling (prototype quality acceptable)" deferral
+covers this. Flag it for Phase 4 if it bites.
 
 **Recommended decision for the human:** keep the current "in-memory-first,
 persist-second" split. Revisit when Phase 2's Dispatcher introduces
@@ -117,7 +117,7 @@ of byzantine behaviour than `answer_correct: false`. The Phase 2 prompt's
 worth reading carefully there.
 
 **Edge case found during implementation** (verifier.rs:91-100): if the
-Worker emitted `Failed { reason }` and the Verifier's independent solve
+Worker emitted `Failed(reason)` and the Verifier's independent solve
 also fails, we currently report `answer_correct: false` because there is no
 correct answer to compare against. An alternative is `answer_correct: true`
 (meaning "we agree the task is unsolvable"). The current behaviour is
