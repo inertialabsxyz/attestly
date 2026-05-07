@@ -47,11 +47,25 @@ flowchart TD
 - **Sequential** (default `Dispatcher`) — one Worker, one Verifier, in order. Used by `dispatcher_flow.rs` and `full_pipeline.rs`.
 - **Fan-out** (`ParallelDispatcher`) — one Worker, N Verifiers running concurrently. Disagreement (any pair of Verifiers reaching different verdicts) is detected and flagged, but per-Verifier verdicts are preserved so downstream code can apply majority logic if it wants. Used by `parallel_verifiers.rs`.
 
-## What's deliberately *not* in the loop
+## What's *not* in the loop
+
+Three deliberate, scope-deferred gaps and one emergent framework gap.
+
+### Deliberate scope deferrals
 
 - **No LLM is called.** The Worker uses a built-in `calculate` tool (a recursive-descent arithmetic parser) so the system is hermetic and runs in CI without API keys.
 - **No blockchain.** `Batch.anchor_tx` exists as a column but is always `NULL`; on-chain anchoring is Phase 2-of-AWP.
 - **No persistent agent identity.** Each Worker/Verifier generates a fresh ed25519 keypair on construction. Persistence and key rotation are deferred.
+
+### Emergent gap surfaced by Phase 4
+
+- **AutoAgents — the framework named "primary" in the plan — has zero lines of code in the implementation.** Worker and Verifier ship as plain async traits because `AgentBuilder.run()` requires a live LLM provider, which collides with the "no LLM" gap above. This was not a planned deferral; it surfaced during Phase 1's framework-integration scan and was never closed. See [`PAIN_POINTS.md`](PAIN_POINTS.md) synthesis #1 and [`DECISIONS.md`](DECISIONS.md) D1.1.
+
+### Why it matters that it's four, not three
+
+The LLM and framework gaps are coupled. The day someone wants to close the LLM gap (a real model in the loop), they hit the framework gap (which agent runtime drives that loop?). [`DECISIONS.md`](DECISIONS.md)'s Option-C-on-Rig recommendation is built on that coupling: defer the framework choice until LLM integration is the next-task, then commit.
+
+The blockchain and identity gaps are independent and can be closed in either order without touching the agent loop.
 
 That's the whole prototype. Everything else in [`ARCHITECTURE.md`](ARCHITECTURE.md) is detail on these five blocks: Worker, Verifier, Dispatcher (or ParallelDispatcher), Batcher, and the storage they share.
 
