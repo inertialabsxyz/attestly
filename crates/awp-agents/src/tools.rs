@@ -13,9 +13,24 @@
 //! whether to wrap them with the AutoAgents `#[tool]` macro once the
 //! framework decision is made (see `docs/PAIN_POINTS.md`).
 
-use awp_core::{sha256, verify_attestation_signature, Attestation};
+use awp_core::{sha256, verify_attestation_signature, Attestation, KycDecision, KycRequest};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+/// Jurisdiction codes treated as high-risk by the demo rule.
+///
+/// Deliberate ISO-3166-style placeholders to avoid implying any real
+/// geopolitical claim. Demo-only; not a production sanctions or risk list.
+pub const HIGH_RISK_JURISDICTIONS: &[&str] = &["XX", "YY"];
+
+/// Amount threshold (in cents) above which a transaction is flagged for
+/// review. $10,000 USD-equivalent — illustrative only, not derived from any
+/// real regulatory threshold.
+pub const FLAG_AMOUNT_CENTS: u64 = 1_000_000;
+
+/// Amount threshold (in cents) above which a wire transfer is rejected and
+/// routed to manual review. $100,000 USD-equivalent — illustrative only.
+pub const WIRE_REJECT_AMOUNT_CENTS: u64 = 10_000_000;
 
 /// Result of running [`verify_attestation`] on a Worker attestation.
 ///
@@ -74,6 +89,53 @@ pub fn calculate(expression: &str) -> Result<CalculationResult, ToolError> {
         expression: expression.to_string(),
         result: value,
     })
+}
+
+/// Run the demo KYC decision rule over a [`KycRequest`].
+///
+/// **Deterministic and pure.** Both Worker and Verifier call this independently
+/// — the rule must produce identical output across runs and processes for the
+/// receipts demo to make sense. See the `kyc` module rustdoc for the demo
+/// disclaimer.
+///
+/// Rule (evaluated top-to-bottom; the first matching branch returns):
+///
+/// 1. `transaction_type == "wire"` and `amount_cents > WIRE_REJECT_AMOUNT_CENTS`
+///    → **Reject** with reason "high-value wire requires manual review".
+/// 2. `jurisdiction` is in [`HIGH_RISK_JURISDICTIONS`] → **Flag** with reason
+///    "high-risk jurisdiction".
+/// 3. `amount_cents > FLAG_AMOUNT_CENTS` → **Flag** with reason "amount
+///    exceeds threshold".
+/// 4. Otherwise → **Approve**.
+///
+/// A request can match multiple Flag conditions (e.g. high-risk jurisdiction
+/// *and* large amount). All matching reasons are collected so the receipt
+/// captures the full picture.
+pub fn kyc_decide(request: &KycRequest) -> KycDecision {
+    if request.transaction_type == "wire" && request.amount_cents > WIRE_REJECT_AMOUNT_CENTS {
+        return KycDecision::Reject {
+            reasons: vec!["high-value wire requires manual review".to_string()],
+        };
+    }
+
+    let mut flag_reasons = Vec::new();
+    if HIGH_RISK_JURISDICTIONS
+        .iter()
+        .any(|j| *j == request.jurisdiction)
+    {
+        flag_reasons.push("high-risk jurisdiction".to_string());
+    }
+    if request.amount_cents > FLAG_AMOUNT_CENTS {
+        flag_reasons.push("amount exceeds threshold".to_string());
+    }
+
+    if flag_reasons.is_empty() {
+        KycDecision::Approve
+    } else {
+        KycDecision::Flag {
+            reasons: flag_reasons,
+        }
+    }
 }
 
 /// Errors returned by the shared tools.
@@ -311,5 +373,104 @@ mod tests {
             verify_attestation("{not json"),
             Err(ToolError::InvalidJson(_))
         ));
+    }
+
+    // ---- kyc_decide ------------------------------------------------------
+
+    #[test]
+    fn kyc_approve_small_domestic_card() {
+        let req = KycRequest::new("cust-100", 499, "US", "card");
+        assert_eq!(kyc_decide(&req), KycDecision::Approve);
+    }
+
+    #[test]
+    fn kyc_flag_high_risk_jurisdiction() {
+        let req = KycRequest::new("cust-200", 500, "XX", "card");
+        assert_eq!(
+            kyc_decide(&req),
+            KycDecision::Flag {
+                reasons: vec!["high-risk jurisdiction".into()]
+            }
+        );
+    }
+
+    #[test]
+    fn kyc_flag_amount_above_threshold() {
+        let req = KycRequest::new("cust-300", FLAG_AMOUNT_CENTS + 1, "US", "card");
+        assert_eq!(
+            kyc_decide(&req),
+            KycDecision::Flag {
+                reasons: vec!["amount exceeds threshold".into()]
+            }
+        );
+    }
+
+    #[test]
+    fn kyc_flag_collects_multiple_reasons() {
+        let req = KycRequest::new("cust-301", FLAG_AMOUNT_CENTS + 1, "YY", "card");
+        match kyc_decide(&req) {
+            KycDecision::Flag { reasons } => {
+                assert_eq!(
+                    reasons,
+                    vec![
+                        "high-risk jurisdiction".to_string(),
+                        "amount exceeds threshold".to_string()
+                    ]
+                );
+            }
+            other => panic!("expected Flag, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn kyc_reject_high_value_wire() {
+        let req = KycRequest::new("cust-400", WIRE_REJECT_AMOUNT_CENTS + 1, "US", "wire");
+        assert_eq!(
+            kyc_decide(&req),
+            KycDecision::Reject {
+                reasons: vec!["high-value wire requires manual review".into()]
+            }
+        );
+    }
+
+    #[test]
+    fn kyc_wire_at_or_below_reject_threshold_only_flags() {
+        // Right at the reject threshold: not strictly greater, so Reject does
+        // not fire. The amount is still over the flag threshold so we Flag.
+        let req = KycRequest::new("cust-401", WIRE_REJECT_AMOUNT_CENTS, "US", "wire");
+        assert_eq!(
+            kyc_decide(&req),
+            KycDecision::Flag {
+                reasons: vec!["amount exceeds threshold".into()]
+            }
+        );
+    }
+
+    #[test]
+    fn kyc_amount_at_flag_threshold_is_approved() {
+        // Boundary: equal to threshold is *not* strictly greater, so Approve.
+        let req = KycRequest::new("cust-500", FLAG_AMOUNT_CENTS, "US", "card");
+        assert_eq!(kyc_decide(&req), KycDecision::Approve);
+    }
+
+    #[test]
+    fn kyc_reject_takes_precedence_over_flag_branches() {
+        // A request that would match both Reject (high-value wire) and Flag
+        // (high-risk jurisdiction) — Reject wins because it evaluates first.
+        let req = KycRequest::new("cust-600", WIRE_REJECT_AMOUNT_CENTS + 1, "XX", "wire");
+        assert_eq!(
+            kyc_decide(&req),
+            KycDecision::Reject {
+                reasons: vec!["high-value wire requires manual review".into()]
+            }
+        );
+    }
+
+    #[test]
+    fn kyc_decide_is_deterministic() {
+        let req = KycRequest::new("cust-700", FLAG_AMOUNT_CENTS + 1, "YY", "card");
+        let first = kyc_decide(&req);
+        let second = kyc_decide(&req);
+        assert_eq!(first, second);
     }
 }
