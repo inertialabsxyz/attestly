@@ -185,6 +185,12 @@ tr.detail > td {
 .verify-line.ok  { color: var(--green); }
 .verify-line.bad { color: var(--red); font-weight: 600; }
 .verify-line.pending { color: var(--ink-faint); }
+.identity-line {
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--ink-faint);
+}
+.identity-line.recurring { color: var(--ink-muted); }
 
 .empty {
     color: var(--ink-faint);
@@ -414,6 +420,29 @@ function escapeHtml(s) {
         .replaceAll("'", "&#39;");
 }
 
+// Per-pubkey occurrence index: for every attestation id, how many other
+// attestations with the *same* agent_pubkey precede it in the currently
+// loaded view (ordered by timestamp ascending, with id as tiebreaker).
+// Recomputed on every render so it reflects whatever the user has loaded.
+// Persistence-free — the viewer never remembers identities across page
+// loads.
+const previousByPubkey = new Map(); // attestation id -> integer
+
+function rebuildIdentityIndex() {
+    previousByPubkey.clear();
+    const seenSoFar = new Map(); // pubkey -> running count
+    const ordered = Array.from(state.attestations.values()).sort((a, b) => {
+        const t = (a.timestamp || 0) - (b.timestamp || 0);
+        return t !== 0 ? t : String(a.id).localeCompare(String(b.id));
+    });
+    for (const att of ordered) {
+        const pk = att.agent_pubkey || "";
+        const prior = seenSoFar.get(pk) || 0;
+        previousByPubkey.set(att.id, prior);
+        seenSoFar.set(pk, prior + 1);
+    }
+}
+
 function renderTimeline() {
     const host = document.getElementById("timeline-host");
     if (state.executions.length === 0 && state.attestations.size === 0) {
@@ -421,6 +450,7 @@ function renderTimeline() {
             '<div class="empty">No data loaded. Run <code>cargo run --example dispatcher_flow</code> to populate <code>data/attestations.json</code> and <code>data/executions.json</code>, then drop both files above.</div>';
         return;
     }
+    rebuildIdentityIndex();
 
     const referencedAttestationIds = new Set();
     for (const exec of state.executions) {
@@ -547,6 +577,7 @@ function renderReceipt(title, att, exec) {
         );
     }
     const refStr = att.references ? att.references : "—";
+    const identityLine = renderIdentityLine(att);
     return (
         '<div class="receipt" data-att-id="' +
         escapeHtml(att.id) +
@@ -568,9 +599,37 @@ function renderReceipt(title, att, exec) {
         '<dt>references</dt><dd>' + escapeHtml(refStr === "—" ? "—" : truncMid(refStr, 8, 8)) + "</dd>" +
         '<dt>signature</dt><dd>' + escapeHtml(truncMid(att.signature, 8, 8)) + "</dd>" +
         "</dl>" +
+        identityLine +
         '<div class="verify-line pending" data-verify-for="' +
         escapeHtml(att.id) +
         '">⏳ verifying signature in browser&hellip;</div>' +
+        "</div>"
+    );
+}
+
+// "Same identity as N previous receipts in this view" — surfaces persistent
+// agent identities by counting prior attestations sharing this `agent_pubkey`
+// in the currently loaded view. First occurrence of a pubkey gets the
+// neutral "first occurrence in this view" line so reviewers see the field
+// is being tracked. Per the GTM Phase 1 plan, this is per-page-load only —
+// no persistence inside the viewer itself.
+function renderIdentityLine(att) {
+    const prior = previousByPubkey.get(att.id) || 0;
+    if (prior === 0) {
+        return (
+            '<div class="identity-line">' +
+            "First occurrence of this agent_pubkey in the current view." +
+            "</div>"
+        );
+    }
+    const noun = prior === 1 ? "receipt" : "receipts";
+    return (
+        '<div class="identity-line recurring">' +
+        "Same identity as " +
+        prior +
+        " previous " +
+        noun +
+        " in this view." +
         "</div>"
     );
 }
