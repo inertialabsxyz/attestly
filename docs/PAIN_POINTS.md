@@ -7,7 +7,108 @@ input to that choice and to Phase 4's framework comparison.
 
 ---
 
-## Phase 1 — Attestations & Signing
+## Phase 4 Synthesis — top sources of friction across phases 1-3
+
+After six weeks of implementation, five themes surfaced repeatedly. They
+are ordered by **impact on framework choice** (top = strongest signal),
+not chronology. Each entry cites concrete files/symbols so the
+recommendation in `docs/DECISIONS.md` is grounded in evidence.
+
+### 1. AutoAgents has no documented multi-agent / worker-verifier pattern
+
+**The core friction.** Flagged in Phase 1 Q1, again in Phase 2 Q2, and
+again at the top of `crates/awp-agents/src/worker.rs:1-21`. AutoAgents
+v0.3.7 ships `AgentBuilder<_, DirectAgent>::new(...).run()` for single
+agents and worked examples for pipelines and design patterns, but **no
+documented worker-verifier handshake**. Wiring the framework's
+`run()` method requires a live LLM provider, which would either make
+`make check` non-hermetic (real LLM calls in CI) or make the example
+binaries unrunnable without an API key.
+
+**Concrete example:** `crates/awp-agents/src/worker.rs` and
+`verifier.rs` ship as plain `async` types implementing
+`WorkerAgent`/`VerifierAgent` traits. They mirror what an AutoAgents
+agent looks like (struct + tools + async `run()`) but the framework
+itself never enters the call path. Six weeks in, the framework named
+"primary" in the prototype plan has zero lines of code in the
+implementation.
+
+This is the single largest gap between what the plan named and what
+got shipped. Every subsequent decision (typed Dispatcher hand-off,
+plain async Batcher, parallel verifiers via `try_join_all`) was made
+*around* this gap, not *with* the framework's help.
+
+### 2. The in-process / on-the-wire dual surface for `verify_attestation`
+
+**Phase 2 Q3 in compressed form.** AutoAgents-style tools take
+`String` JSON: `verify_attestation(attestation_json: String)`. But the
+in-process Dispatcher → Verifier hand-off wants the typed
+`&Attestation` for compile-time safety. Phase 2 ended up shipping
+*both* surfaces — `verify_attestation` (string) and
+`verify_attestation_struct` (typed) — pointing at the same inner
+logic.
+
+**Concrete example:** `crates/awp-agents/src/tools.rs` defines two
+entry points wrapping one helper. This duplication is currently
+~5 lines of glue, but it foreshadows the cost of an LLM-driven path:
+every typed in-process value (`Attestation`, `WorkerTask`,
+`InclusionProof`) would need a serialised twin for the LLM tool
+surface. The framework choice that minimises this cost wins.
+
+### 3. `TaskExecution`'s single-verifier shape is hard-coded
+
+**Phase 4 stretch-task pain.** `crates/awp-core/src/task.rs:23-34`
+defines `worker_attestation: Option<Attestation>` and
+`verifier_attestation: Option<Attestation>` — exactly one of each.
+The plan's "Coordination State" subsection bakes in the same shape.
+Phase 4's parallel-verifier stretch task immediately ran into it: a
+run with three verifiers needs three records, not one.
+
+**Concrete example:**
+`crates/awp-agents/src/parallel.rs` ships its own `ParallelExecution`
+result type with `verifier_attestations: Vec<Attestation>`, and uses
+a "first verifier as primary" projection (`as_task_execution`) to
+write a `TaskExecution`-shaped record to the executions log so the
+Phase 2 reader keeps working. That projection is exactly the kind of
+shim that accumulates as new coordination patterns get added —
+parallel verifiers, retry chains, sub-agent fan-out — and is why
+Phase 2 of AWP overall should generalise the coordination type
+**before** the second pattern lands, not after.
+
+### 4. Three storage models for one prototype
+
+`data/attestations.json` (Phase 1), `data/executions.json` (Phase 2),
+and `data/awp.db` SQLite (Phase 3) are all live in the current tree.
+The plan's "Repo Structure" section showed SQLite under `data/` but
+did not authorise replacing the JSON logs; Phase 3 added SQLite
+alongside, not instead. The result is three persistence formats with
+overlapping semantics: an attestation can be in `attestations.json`
+only (Phase 1 example), in both `attestations.json` and SQLite (Phase
+3 example), or in `attestations.json` plus `executions.json` plus
+SQLite (full pipeline run).
+
+**Concrete example:** the Phase 4 `ParallelDispatcher` had to choose
+where to log the multi-verifier execution. It writes a projected
+single-verifier `TaskExecution` to `executions.json` (preserving the
+Phase 2 reader) and also forwards every attestation to both
+`attestations.json` *and* the optional Batcher's SQLite. That's three
+write paths for one execution — fine for a prototype, untenable for
+production.
+
+### 5. Liveness backstop wakeups for time-based triggers
+
+The Batcher polls once per second to enforce the `max_batch_age_secs`
+trigger (`crates/awp-agents/src/batcher.rs:193-196`). This is a
+deliberate trade-off (Phase 3 Q1) — without it, the last attestation
+in a quiet hour has unbounded latency — but every Batcher instance
+costs one wakeup per second forever, even when idle. At small scale
+(one Batcher) it's invisible; at production scale (one Batcher per
+tenant or per agent class) it is a real cost. This is a framework-
+agnostic concern but worth flagging because the same shape will
+recur in any future actor that needs both event-driven and
+time-driven triggers (retry backoff, anchor-cadence, etc.).
+
+---
 
 ### Q1. How do you cleanly inject attestation generation into AutoAgents output flow?
 
@@ -345,6 +446,69 @@ is probably cleaner than mutable batches.
 
 ---
 
-## Recurring friction (cross-phase)
+## Phase 4 — Evaluate & Decide
 
-*To be populated as Phase 4 surfaces patterns.*
+### Stretch task chosen: Option B — Parallel verifiers
+
+We picked Option B (parallel verifiers) over Option A (MCP) because the
+Phase 4 brief asked for "the one most likely to surface a framework
+limitation, not the one most likely to succeed", and Phase 2's PAIN_POINTS
+Q2 had already flagged parallel verifiers as the natural test of whether
+AutoAgents' actor model adds value over plain trait objects:
+
+> If AutoAgents' actor channels add real value (e.g. for the
+> parallel-verifiers stretch task), that's a strong signal for
+> Decision Option A; if not, it's a signal for C (custom on Rig).
+
+Option A (MCP wrapping `verify_attestation`) would have exercised our
+existing tool surface but said little about the multi-agent
+coordination question — which is the question that drives the
+framework choice.
+
+### What the parallel-verifier implementation surfaced
+
+**The actor model was not needed.**
+`crates/awp-agents/src/parallel.rs` runs N verifiers concurrently with
+~12 lines of `futures::future::try_join_all` plus a per-future
+`tokio::time::timeout` wrapper. The plan's "Verifier disagreement"
+detection is a 4-line scan over `(attestation_valid, answer_correct)`
+tuples for distinctness. There is no message bus, no supervisor, no
+mailbox, no dead-letter queue. This is not a criticism of actor
+frameworks generally — it is observation that *this particular
+coordination shape* (one Worker, N independent Verifiers, joined
+once) does not benefit from one. For 3 verifiers running ~200ms
+each, the parallel run completes in ~250ms (vs ~600ms sequential)
+with zero framework support.
+
+**The hard part was the data type, not the orchestration.**
+As called out in the synthesis section above, the plan's
+`TaskExecution` is hard-coded to one verifier. The Phase 4 stretch
+task spent more lines on `ParallelExecution` + the
+`as_task_execution` projection than on the actual concurrency. A
+framework that gave us "fan-out to N agents" out of the box would
+not have helped here — what we needed was a coordination *type*
+that already accommodated N verifier records. That's a core-crate
+shape question, not a framework question.
+
+**One verifier failure halts the whole stage.**
+`try_join_all` short-circuits on the first error. We accepted this
+because it matches the Phase 2 single-verifier Dispatcher (any
+verifier error = `Failed { stage, reason }`), but a "best-effort"
+policy that returns whichever verifiers succeeded is a one-line
+change to use `join_all` instead. We didn't ship it because the
+Phase 4 brief said "this is an evaluation phase, not a refactor",
+but it's a real product decision the human should make:
+- **Strict (current):** any verifier failure = stage failure. Good for
+  high-trust environments where a verifier failing is itself
+  suspicious.
+- **Best-effort:** use whatever verifiers responded; flag the failures
+  in `ParallelExecution`. Better for production where transient
+  network/process failures are common.
+
+### Cross-phase recurring friction
+
+The synthesis section at the top of this file enumerates the five
+biggest sources of friction across phases 1-3 with concrete examples.
+The recommendation in `docs/DECISIONS.md` cites that synthesis
+directly — readers wanting "what was hard?" should start there, not
+here.
