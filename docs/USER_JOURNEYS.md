@@ -153,6 +153,8 @@ This is product / GTM work, not protocol work. Phases 1–4 of the prototype are
 
 ## See also
 
+- [`../planning/gtm-phase-1-plan.md`](../planning/gtm-phase-1-plan.md) — the four-step plan that operationalises this journey analysis
+- [`../planning/gtm-phase-1-agent-prompts.md`](../planning/gtm-phase-1-agent-prompts.md) — dispatch prompts for the four steps
 - [`../awp-market-research.md`](../awp-market-research.md) — buyer personas, GTM plan, defensibility levers
 - [`PROCESS_OVERVIEW.md`](PROCESS_OVERVIEW.md) — system overview + the four gaps
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — full architecture
