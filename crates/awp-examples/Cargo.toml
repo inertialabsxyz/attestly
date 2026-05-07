@@ -31,3 +31,7 @@ path = "../../examples/dispatcher_flow.rs"
 [[example]]
 name = "full_pipeline"
 path = "../../examples/full_pipeline.rs"
+
+[[example]]
+name = "parallel_verifiers"
+path = "../../examples/parallel_verifiers.rs"
