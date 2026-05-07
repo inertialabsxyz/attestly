@@ -157,9 +157,9 @@ pub trait IdentityStore {
     fn save(&self, identity: &AgentIdentity) -> Result<(), IdentityError>;
 }
 
-/// On-disk wire shape used by [`FileIdentityStore`]. Public only so other
-/// crates that want to interoperate with the same file format (e.g. a future
-/// CLI) don't have to reverse-engineer the JSON layout.
+/// On-disk wire shape used by [`FileIdentityStore`]. The JSON layout is
+/// documented in the module-level rustdoc so future tooling (e.g. a CLI) can
+/// read the same files without depending on this private type.
 #[derive(Debug, Serialize, Deserialize)]
 struct IdentityFile {
     agent_id: String,
