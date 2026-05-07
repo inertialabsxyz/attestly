@@ -122,7 +122,7 @@ Mapping back to the four gaps in [`PROCESS_OVERVIEW.md`](PROCESS_OVERVIEW.md):
 | Discovery → Evaluation (all) | None — spec is public, prototype works | — |
 | Evaluation → Pilot (Sarah) | **No audit viewer.** Receipts exist only as JSONL / SQLite. | High |
 | Evaluation → Pilot (Marcus) | **No persistent identity.** Restart = new agent. Not credible for a settlement system. | High |
-| Pilot → Adoption (Sarah) | **No compliance pre-mapping doc.** GTM §4.2 lever #5 — needs "AWP → SR 11-7 / EU AI Act / HIPAA" mapping. | Medium |
+| Pilot → Adoption (Sarah) | ✓ SR 11-7 ([`compliance/SR_11_7.md`](compliance/SR_11_7.md)) — additional regulations TBD | Resolved (partial) |
 | Pilot → Adoption (Marcus) | **No SDK in Python / TypeScript.** Rust core stays reference; Marcus's platform is probably Node. | Medium |
 | Pilot → Adoption (Riya) | **No on-chain anchoring.** | Low (workaround: she anchors herself) |
 
