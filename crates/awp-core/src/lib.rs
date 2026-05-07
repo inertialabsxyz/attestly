@@ -5,11 +5,17 @@
 //! `awp-agents`.
 
 pub mod attestation;
+pub mod execution;
 pub mod merkle;
 pub mod signing;
 pub mod storage;
+pub mod task;
 
 pub use attestation::{
     append_attestation, load_attestations, Attestation, AttestationError, AttestationStatus,
 };
+pub use execution::{
+    append_execution, load_execution, load_execution_records, load_executions, TaskExecutionRecord,
+};
 pub use signing::{sha256, verify_attestation_signature, AgentKeypair};
+pub use task::{ExecutionStatus, TaskExecution};
