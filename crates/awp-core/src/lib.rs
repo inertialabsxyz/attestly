@@ -6,6 +6,7 @@
 
 pub mod attestation;
 pub mod execution;
+pub mod kyc;
 pub mod merkle;
 pub mod signing;
 pub mod storage;
@@ -17,6 +18,7 @@ pub use attestation::{
 pub use execution::{
     append_execution, load_execution, load_execution_records, load_executions, TaskExecutionRecord,
 };
+pub use kyc::{KycDecision, KycRequest};
 pub use merkle::{
     attestation_leaf_hash, build_tree, inclusion_proof, verify_inclusion, Batch, InclusionProof,
     MerkleError, MerkleTree, Position, ProofNode,
