@@ -26,20 +26,28 @@ use std::path::PathBuf;
 
 use awp_agents::{decision_output, KycVerifier, KycVerifierAgent, KycWorker, KycWorkerAgent};
 use awp_core::{
-    append_attestation, append_execution, Attestation, AttestationStatus, ExecutionStatus,
-    KycDecision, KycRequest, TaskExecution,
+    append_attestation, append_execution, AgentIdentity, Attestation, AttestationStatus,
+    ExecutionStatus, FileIdentityStore, KycDecision, KycRequest, TaskExecution,
 };
 
 const ATTESTATIONS_PATH: &str = "data/attestations.json";
 const EXECUTIONS_PATH: &str = "data/executions.json";
+const IDENTITIES_DIR: &str = "data/identities";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let attestations_path = PathBuf::from(ATTESTATIONS_PATH);
     let executions_path = PathBuf::from(EXECUTIONS_PATH);
 
-    let worker = KycWorker::new("agent-kyc-01");
-    let verifier = KycVerifier::new("agent-kyc-02");
+    // Persistent identities: load existing keypairs from disk, or generate
+    // and save fresh ones if this is the first run. Re-running the demo
+    // produces attestations from the same `agent_pubkey` for both agents
+    // until the underlying JSON files are removed.
+    let store = FileIdentityStore::new(IDENTITIES_DIR);
+    let worker_identity = AgentIdentity::load_or_create(&store, "agent-kyc-01")?;
+    let verifier_identity = AgentIdentity::load_or_create(&store, "agent-kyc-02")?;
+    let worker = KycWorker::with_identity(worker_identity);
+    let verifier = KycVerifier::with_identity(verifier_identity);
 
     // -- Scenario 1: Approve -------------------------------------------------
     let approve_req = KycRequest::new("4711", 8_999, "US", "card");
