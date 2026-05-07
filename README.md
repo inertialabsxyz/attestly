@@ -49,6 +49,16 @@ Not a token. Not a DAO. Not on-chain AI. Not a reputation score.
 
 Rust, [AutoAgents](https://github.com/liquidos-ai/AutoAgents), Ed25519, Merkle trees, SQLite. See [`planning/awp-prototype-plan.md`](planning/awp-prototype-plan.md) for the full breakdown and weekly milestones.
 
+## Examples
+
+All examples live in [`examples/`](examples/) and are runnable from the workspace root with `cargo run --example <name>`. Each appends to `data/attestations.json` and `data/executions.json` so you can re-run them and inspect the growing log.
+
+- **`kyc_receipts`** — the headline demo. Replaces the arithmetic task with a deterministic KYC (Know Your Customer) decision rule and runs three scenarios end-to-end: a clean **Approve**, a clean **Flag**, and a **tampered** receipt where the Worker's signed output is mutated after signing. The Verifier independently re-decides each request and the tampered scenario is caught via signature mismatch with a customer-resonant rejection. Pair with [`docs/USER_JOURNEYS.md`](docs/USER_JOURNEYS.md) (Persona A — compliance lead Sarah).
+- **`dispatcher_flow`** — Dispatcher-coordinated Worker → Verifier with per-stage timeouts; covers the happy path, a Worker-stage timeout, and a Verifier disagreement.
+- **`full_pipeline`** — adds the Phase 3 Batcher: attestations are batched into Merkle trees, persisted to SQLite, and inclusion-proven.
+- **`parallel_verifiers`** — Phase 4 stretch task. N verifiers run concurrently against one Worker; disagreement detection surfaces minority dissent.
+- **`simple_attestation`** — Phase 1 checkpoint. Minimal Worker → Verifier round trip without the Dispatcher.
+
 ## Contributing
 
 The repo follows a structured agent workflow defined in [`.claude/`](.claude/) — commits, testing, review gate, PRs, and dispatch prompts for parallel agents. If you're contributing (human or agent), start there.

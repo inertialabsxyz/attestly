@@ -21,6 +21,10 @@ rusqlite = { workspace = true }
 uuid = { workspace = true }
 
 [[example]]
+name = "kyc_receipts"
+path = "../../examples/kyc_receipts.rs"
+
+[[example]]
 name = "simple_attestation"
 path = "../../examples/simple_attestation.rs"
 

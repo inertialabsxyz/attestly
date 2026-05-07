@@ -8,6 +8,7 @@
 
 pub mod batcher;
 pub mod dispatcher;
+pub mod kyc_agents;
 pub mod parallel;
 pub mod tools;
 pub mod verifier;
@@ -18,7 +19,14 @@ pub use batcher::{
     DEFAULT_MIN_BATCH_SIZE,
 };
 pub use dispatcher::{Dispatcher, DispatcherConfig, DispatcherError, DEFAULT_STAGE_TIMEOUT};
+pub use kyc_agents::{
+    decision_output, KycVerifier, KycVerifierAgent, KycVerifierError, KycWorker, KycWorkerAgent,
+    KycWorkerError,
+};
 pub use parallel::{ParallelDispatcher, ParallelDispatcherError, ParallelExecution};
-pub use tools::{calculate, verify_attestation, verify_attestation_struct, VerificationResult};
+pub use tools::{
+    calculate, kyc_decide, verify_attestation, verify_attestation_struct, VerificationResult,
+    FLAG_AMOUNT_CENTS, HIGH_RISK_JURISDICTIONS, WIRE_REJECT_AMOUNT_CENTS,
+};
 pub use verifier::{Verifier, VerifierAgent, VerifierError};
 pub use worker::{Worker, WorkerAgent, WorkerError, WorkerTask};
