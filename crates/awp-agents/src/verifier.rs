@@ -6,7 +6,7 @@
 //! async types rather than wired through `AgentBuilder.run()`.
 
 use async_trait::async_trait;
-use awp_core::{sha256, AgentKeypair, Attestation, AttestationStatus};
+use awp_core::{sha256, AgentIdentity, AgentKeypair, Attestation, AttestationStatus};
 use thiserror::Error;
 
 use crate::tools::{calculate, verify_attestation_struct, ToolError};
@@ -27,10 +27,19 @@ pub struct Verifier {
 }
 
 impl Verifier {
+    /// Construct a Verifier with a freshly-generated **ephemeral** keypair.
+    /// Provided for backwards compatibility with the original four examples;
+    /// for persistent identity use [`Verifier::with_identity`].
     pub fn new(agent_id: impl Into<String>) -> Self {
+        Self::with_identity(AgentIdentity::generate(agent_id))
+    }
+
+    /// Construct a Verifier that signs with the given persisted (or
+    /// ephemeral) identity.
+    pub fn with_identity(identity: AgentIdentity) -> Self {
         Self {
-            agent_id: agent_id.into(),
-            keypair: AgentKeypair::generate(),
+            agent_id: identity.agent_id,
+            keypair: identity.keypair,
             clock: Box::new(default_clock),
         }
     }
@@ -132,6 +141,37 @@ mod tests {
     use super::*;
     use crate::worker::{Worker, WorkerAgent, WorkerTask};
     use awp_core::verify_attestation_signature;
+
+    #[tokio::test]
+    async fn verifier_new_produces_ephemeral_keypair_per_call() {
+        // Mirrors the Worker backwards-compat test: `Verifier::new` must
+        // keep producing a fresh ephemeral keypair on every call so the
+        // four original examples continue to work unchanged.
+        let a = Verifier::new("verifier-1");
+        let b = Verifier::new("verifier-1");
+        assert_ne!(
+            a.public_key(),
+            b.public_key(),
+            "Verifier::new should generate a fresh keypair per call",
+        );
+    }
+
+    #[tokio::test]
+    async fn verifier_with_identity_uses_supplied_keypair() {
+        let identity = AgentIdentity::generate("verifier-persistent");
+        let public = identity.public_bytes();
+        let v = Verifier::with_identity(identity).with_clock(|| 1_700_000_001);
+        assert_eq!(v.public_key(), public);
+
+        // Run end-to-end so we exercise the signing path.
+        let w = Worker::new("worker-1").with_clock(|| 1_700_000_000);
+        let task = WorkerTask::new("140 * 0.6");
+        let worker_att = w.run(&task).await.unwrap();
+        let verifier_att = v.run(&task, &worker_att).await.unwrap();
+
+        assert_eq!(verifier_att.agent_pubkey, public);
+        assert!(verify_attestation_signature(&verifier_att));
+    }
 
     #[tokio::test]
     async fn verifier_agrees_with_correct_worker() {

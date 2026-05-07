@@ -20,7 +20,7 @@
 //! drive these via an LLM. See `docs/PAIN_POINTS.md` for the open question.
 
 use async_trait::async_trait;
-use awp_core::{sha256, AgentKeypair, Attestation, AttestationStatus};
+use awp_core::{sha256, AgentIdentity, AgentKeypair, Attestation, AttestationStatus};
 use thiserror::Error;
 
 use crate::tools::{calculate, ToolError};
@@ -65,11 +65,20 @@ pub struct Worker {
 }
 
 impl Worker {
-    /// Construct a Worker with a freshly-generated keypair.
+    /// Construct a Worker with a freshly-generated **ephemeral** keypair.
+    /// Provided for backwards compatibility with the original four examples;
+    /// for persistent identity use [`Worker::with_identity`].
     pub fn new(agent_id: impl Into<String>) -> Self {
+        Self::with_identity(AgentIdentity::generate(agent_id))
+    }
+
+    /// Construct a Worker that signs with the given persisted (or ephemeral)
+    /// identity. Pair with [`awp_core::AgentIdentity::load_or_create`] +
+    /// [`awp_core::FileIdentityStore`] for cross-restart stability.
+    pub fn with_identity(identity: AgentIdentity) -> Self {
         Self {
-            agent_id: agent_id.into(),
-            keypair: AgentKeypair::generate(),
+            agent_id: identity.agent_id,
+            keypair: identity.keypair,
             clock: Box::new(default_clock),
         }
     }
@@ -147,6 +156,38 @@ fn default_clock() -> i64 {
 mod tests {
     use super::*;
     use awp_core::verify_attestation_signature;
+
+    #[tokio::test]
+    async fn worker_new_produces_ephemeral_keypair_per_call() {
+        // Backwards-compat: `Worker::new` must keep behaving exactly as it
+        // did before the AgentIdentity refactor — fresh OS-RNG keypair every
+        // call, no persistence side effects. The four original examples
+        // (simple_attestation, dispatcher_flow, full_pipeline,
+        // parallel_verifiers) rely on this.
+        let a = Worker::new("worker-1");
+        let b = Worker::new("worker-1");
+        assert_eq!(a.agent_id(), "worker-1");
+        assert_eq!(b.agent_id(), "worker-1");
+        assert_ne!(
+            a.public_key(),
+            b.public_key(),
+            "Worker::new should generate a fresh keypair per call",
+        );
+    }
+
+    #[tokio::test]
+    async fn worker_with_identity_uses_supplied_keypair() {
+        let identity = AgentIdentity::generate("worker-persistent");
+        let public = identity.public_bytes();
+        let w = Worker::with_identity(identity).with_clock(|| 1_700_000_000);
+        assert_eq!(w.agent_id(), "worker-persistent");
+        assert_eq!(w.public_key(), public);
+
+        let task = WorkerTask::new("140 * 0.6");
+        let att = w.run(&task).await.unwrap();
+        assert_eq!(att.agent_pubkey, public);
+        assert!(verify_attestation_signature(&att));
+    }
 
     #[tokio::test]
     async fn worker_produces_signed_completed_attestation() {

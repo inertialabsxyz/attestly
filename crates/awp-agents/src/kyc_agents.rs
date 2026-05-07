@@ -15,7 +15,9 @@
 //! "Pick option (b) unless option (a) is cleaner than expected."
 
 use async_trait::async_trait;
-use awp_core::{sha256, AgentKeypair, Attestation, AttestationStatus, KycDecision, KycRequest};
+use awp_core::{
+    sha256, AgentIdentity, AgentKeypair, Attestation, AttestationStatus, KycDecision, KycRequest,
+};
 use thiserror::Error;
 
 use crate::tools::{kyc_decide, verify_attestation_struct};
@@ -41,10 +43,21 @@ pub struct KycWorker {
 }
 
 impl KycWorker {
+    /// Construct a KycWorker with a freshly-generated **ephemeral** keypair.
+    /// Convenience constructor for tests; the GTM Phase 1 KYC demo uses
+    /// [`KycWorker::with_identity`] with a [`awp_core::FileIdentityStore`]
+    /// so the agent's `agent_pubkey` is stable across runs.
     pub fn new(agent_id: impl Into<String>) -> Self {
+        Self::with_identity(AgentIdentity::generate(agent_id))
+    }
+
+    /// Construct a KycWorker that signs with the given persisted (or
+    /// ephemeral) identity. This is the constructor the kyc_receipts demo
+    /// uses to produce stable `agent_pubkey` values across restarts.
+    pub fn with_identity(identity: AgentIdentity) -> Self {
         Self {
-            agent_id: agent_id.into(),
-            keypair: AgentKeypair::generate(),
+            agent_id: identity.agent_id,
+            keypair: identity.keypair,
             clock: Box::new(default_clock),
         }
     }
@@ -103,10 +116,19 @@ pub struct KycVerifier {
 }
 
 impl KycVerifier {
+    /// Construct a KycVerifier with a freshly-generated **ephemeral**
+    /// keypair. Convenience constructor for tests; production callers (and
+    /// the GTM Phase 1 KYC demo) use [`KycVerifier::with_identity`].
     pub fn new(agent_id: impl Into<String>) -> Self {
+        Self::with_identity(AgentIdentity::generate(agent_id))
+    }
+
+    /// Construct a KycVerifier that signs with the given persisted (or
+    /// ephemeral) identity.
+    pub fn with_identity(identity: AgentIdentity) -> Self {
         Self {
-            agent_id: agent_id.into(),
-            keypair: AgentKeypair::generate(),
+            agent_id: identity.agent_id,
+            keypair: identity.keypair,
             clock: Box::new(default_clock),
         }
     }
@@ -198,6 +220,45 @@ fn default_clock() -> i64 {
 mod tests {
     use super::*;
     use awp_core::verify_attestation_signature;
+
+    #[tokio::test]
+    async fn kyc_worker_new_produces_ephemeral_keypair() {
+        // Symmetry with the Worker test: `KycWorker::new` must remain a
+        // fresh-keypair-per-call constructor so it keeps working in tests
+        // that don't want filesystem state.
+        let a = KycWorker::new("kyc-worker");
+        let b = KycWorker::new("kyc-worker");
+        assert_ne!(a.public_key(), b.public_key());
+    }
+
+    #[tokio::test]
+    async fn kyc_worker_with_identity_uses_supplied_keypair() {
+        let identity = AgentIdentity::generate("kyc-worker-persistent");
+        let public = identity.public_bytes();
+        let w = KycWorker::with_identity(identity).with_clock(|| 1_700_000_000);
+        assert_eq!(w.public_key(), public);
+
+        let req = KycRequest::new("cust-1", 499, "US", "card");
+        let att = w.run(&req).await.unwrap();
+        assert_eq!(att.agent_pubkey, public);
+        assert!(verify_attestation_signature(&att));
+    }
+
+    #[tokio::test]
+    async fn kyc_verifier_with_identity_uses_supplied_keypair() {
+        let identity = AgentIdentity::generate("kyc-verifier-persistent");
+        let public = identity.public_bytes();
+        let v = KycVerifier::with_identity(identity).with_clock(|| 1_700_000_001);
+        assert_eq!(v.public_key(), public);
+
+        let w = KycWorker::new("kyc-worker").with_clock(|| 1_700_000_000);
+        let req = KycRequest::new("cust-1", 499, "US", "card");
+        let worker_att = w.run(&req).await.unwrap();
+        let verifier_att = v.run(&req, &worker_att).await.unwrap();
+
+        assert_eq!(verifier_att.agent_pubkey, public);
+        assert!(verify_attestation_signature(&verifier_att));
+    }
 
     #[tokio::test]
     async fn kyc_worker_signs_approve_decision() {
