@@ -72,6 +72,7 @@ That's the whole prototype. Everything else in [`ARCHITECTURE.md`](ARCHITECTURE.
 ## See also
 
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — full architecture: modules, types, per-example swim lanes, batcher trigger logic, storage map
+- [`USER_JOURNEYS.md`](USER_JOURNEYS.md) — buyer-persona journeys + GTM-driven next-step ordering
 - [`PHASE1_REVIEW.md`](PHASE1_REVIEW.md) — Phase 1 outcome and recommended next move
 - [`DECISIONS.md`](DECISIONS.md) — design decisions log + framework recommendation
 - [`PAIN_POINTS.md`](PAIN_POINTS.md) — friction log + Phase 4 synthesis

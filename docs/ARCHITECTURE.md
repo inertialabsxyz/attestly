@@ -439,6 +439,7 @@ These appear in the planning docs but are **explicitly deferred** and not presen
 ## See also
 
 - [`PROCESS_OVERVIEW.md`](PROCESS_OVERVIEW.md) — 30-second walkthrough of the full pipeline
+- [`USER_JOURNEYS.md`](USER_JOURNEYS.md) — buyer-persona journeys + GTM-driven next-step ordering
 - [`PHASE1_REVIEW.md`](PHASE1_REVIEW.md) — synthesised executive summary of Phase 1's outcome
 - [`DECISIONS.md`](DECISIONS.md) — design decisions log + framework recommendation
 - [`PAIN_POINTS.md`](PAIN_POINTS.md) — friction log + Phase 4 synthesis

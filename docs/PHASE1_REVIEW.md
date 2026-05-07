@@ -62,12 +62,14 @@ Flagged in `docs/DECISIONS.md` and `docs/PAIN_POINTS.md` as explicitly the human
 
 The Postmortem is honest that the framework decision can be deferred — the swap is contained either way. The pain points that *don't* get easier with delay are #3 (`TaskExecution`'s hard-coded single-verifier shape) and #4 (three storage models). Both compound the longer they sit.
 
-A defensible sequencing:
+A defensible *protocol-driven* sequencing:
 
 1. **Generalise the coordination type** before the second multi-verifier shape lands. The Phase 4 postmortem already calls this out: "Phase 2 of AWP overall should generalise the coordination type before the second pattern lands, not after."
 2. **Consolidate storage** to a single canonical model (probably SQLite, since it's already the source of truth for batches). Keep JSON exporters for compatibility but drop them as the source of truth.
 3. **Then start on-chain anchoring** with a clean coordination type and a single storage model.
 4. **Defer the framework decision** until LLM integration is the next-task. The 4-hour Rig spike suggested in DECISIONS.md is a cheap way to convert "medium confidence" to "high" when that day arrives.
+
+> **Update — superseded by GTM-driven ordering.** A subsequent user-journey analysis ([`USER_JOURNEYS.md`](USER_JOURNEYS.md)) re-prioritises the next steps around buyer personas from [`../awp-market-research.md`](../awp-market-research.md). The decisive insight: persistent agent identity (gap #3 in [`PROCESS_OVERVIEW.md`](PROCESS_OVERVIEW.md)) is load-bearing for Persona B's pilot stage, not just a deferred item; and the audit viewer is load-bearing for Persona A's pilot. The GTM-driven ordering — viewer → vertical demo → identity → compliance mapping — supersedes the protocol-driven ordering above for the next six months. See `USER_JOURNEYS.md` for the full reasoning.
 
 This is one reading. The alternatives — "commit to Rig now and do the spike", or "start anchoring immediately and accept the storage / coordination compounding cost" — are both defensible.
 
@@ -75,6 +77,7 @@ This is one reading. The alternatives — "commit to Rig now and do the spike", 
 
 - [`docs/PROCESS_OVERVIEW.md`](PROCESS_OVERVIEW.md) — 30-second walkthrough of the full pipeline
 - [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) — what is currently implemented (modules, flows, swim lanes)
+- [`docs/USER_JOURNEYS.md`](USER_JOURNEYS.md) — buyer-persona journeys + GTM-driven next-step ordering
 - [`docs/DECISIONS.md`](DECISIONS.md) — design decisions log, framework comparison, recommendation
 - [`docs/PAIN_POINTS.md`](PAIN_POINTS.md) — running friction log, Phase 4 synthesis at the top
 - [`planning/awp-prototype-plan.md`](../planning/awp-prototype-plan.md) — original plan plus appended "Phase 1 Postmortem" section
