@@ -84,12 +84,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // -- Task 2: worker timeout. Wrap the real worker in a 2s sleep and
     //    configure a 200ms worker timeout.
     {
-        let dispatcher = Dispatcher::new(
-            DispatcherConfig::standard().with_timeouts(
-                Duration::from_millis(200),
-                awp_agents::DEFAULT_STAGE_TIMEOUT,
-            ),
-        );
+        let dispatcher = Dispatcher::new(DispatcherConfig::standard().with_timeouts(
+            Duration::from_millis(200),
+            awp_agents::DEFAULT_STAGE_TIMEOUT,
+        ));
         let slow_worker = DelayedWorker {
             inner: Worker::new("worker-1-slow"),
             delay: Duration::from_secs(2),

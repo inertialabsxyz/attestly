@@ -47,7 +47,10 @@ async fn dispatcher_drives_worker_verifier_to_complete() {
     );
     assert!(exec.completed_at.is_some());
 
-    let worker_att = exec.worker_attestation.as_ref().expect("worker attestation");
+    let worker_att = exec
+        .worker_attestation
+        .as_ref()
+        .expect("worker attestation");
     let verifier_att = exec
         .verifier_attestation
         .as_ref()
