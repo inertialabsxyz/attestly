@@ -89,8 +89,10 @@ dependencies = [
  "awp-agents",
  "awp-core",
  "chrono",
+ "rusqlite",
  "serde_json",
  "tokio",
+ "uuid",
 ]
 
 [[package]]
