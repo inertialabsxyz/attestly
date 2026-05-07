@@ -17,6 +17,8 @@ hex = { workspace = true }
 rand = { workspace = true }
 thiserror = { workspace = true }
 chrono = { workspace = true }
+rs_merkle = { workspace = true }
+rusqlite = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
