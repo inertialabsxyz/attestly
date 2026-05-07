@@ -18,6 +18,7 @@
 //! semantics.
 
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Duration;
 
 use awp_core::{
@@ -27,6 +28,7 @@ use awp_core::{
 use thiserror::Error;
 use tokio::time::error::Elapsed;
 
+use crate::batcher::{Batcher, BatcherError};
 use crate::verifier::VerifierAgent;
 use crate::worker::{WorkerAgent, WorkerTask};
 
@@ -94,14 +96,23 @@ pub enum DispatcherError {
     AttestationPersistence(AttestationError),
     #[error("failed to persist execution: {0}")]
     ExecutionPersistence(AttestationError),
+    #[error("failed to submit attestation to batcher: {0}")]
+    BatcherSubmit(BatcherError),
 }
 
 /// The Dispatcher. Holds config and a wall-clock source. Worker and
 /// Verifier are passed to [`Dispatcher::run`] so a single Dispatcher can
 /// drive heterogeneous agent pairs across runs.
+///
+/// In Phase 3 the Dispatcher optionally forwards every produced
+/// attestation to a [`Batcher`] (set via [`Dispatcher::with_batcher`]).
+/// When no batcher is attached the Phase 1/2 contract is preserved: only
+/// the JSON logs are written. The Phase 1/2 example binaries
+/// (`simple_attestation`, `dispatcher_flow`) keep working unchanged.
 pub struct Dispatcher {
     config: DispatcherConfig,
     clock: Box<dyn Fn() -> i64 + Send + Sync>,
+    batcher: Option<Arc<Batcher>>,
 }
 
 impl Dispatcher {
@@ -109,6 +120,7 @@ impl Dispatcher {
         Self {
             config,
             clock: Box::new(default_clock),
+            batcher: None,
         }
     }
 
@@ -119,6 +131,15 @@ impl Dispatcher {
         F: Fn() -> i64 + Send + Sync + 'static,
     {
         self.clock = Box::new(clock);
+        self
+    }
+
+    /// Attach a [`Batcher`] so that every Worker and Verifier
+    /// attestation produced by [`Dispatcher::run`] is also forwarded to
+    /// the batcher. Wrapped in `Arc` so the same batcher can be shared
+    /// across multiple Dispatcher instances.
+    pub fn with_batcher(mut self, batcher: Arc<Batcher>) -> Self {
+        self.batcher = Some(batcher);
         self
     }
 
@@ -235,6 +256,21 @@ impl Dispatcher {
         if let Err(e) = append_execution(&self.config.executions_path, &execution) {
             return Err(DispatcherError::ExecutionPersistence(e));
         }
+
+        // Phase 3 wiring: once both attestations are durably on disk and
+        // the execution record is saved, hand them to the Batcher (if
+        // configured) so they enter the next Merkle batch.
+        if let Some(batcher) = &self.batcher {
+            batcher
+                .submit(worker_attestation)
+                .await
+                .map_err(DispatcherError::BatcherSubmit)?;
+            batcher
+                .submit(verifier_attestation)
+                .await
+                .map_err(DispatcherError::BatcherSubmit)?;
+        }
+
         Ok(execution)
     }
 
