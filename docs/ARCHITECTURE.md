@@ -2,7 +2,7 @@
 
 A description of what is currently shipped in this repository at the close of the 8-week prototype (Phases 1–4 merged to `main`). Diagrams are Mermaid and render inline in GitHub.
 
-This document is descriptive, not prescriptive. For the *why* behind the shape, see [`DECISIONS.md`](DECISIONS.md). For known friction, see [`PAIN_POINTS.md`](PAIN_POINTS.md). For the original plan plus the postmortem, see [`../planning/awp-prototype-plan.md`](../planning/awp-prototype-plan.md).
+This document is descriptive, not prescriptive. For the 30-second walkthrough, see [`PROCESS_OVERVIEW.md`](PROCESS_OVERVIEW.md). For the *why* behind the shape, see [`DECISIONS.md`](DECISIONS.md). For known friction, see [`PAIN_POINTS.md`](PAIN_POINTS.md). For the original plan plus the postmortem, see [`../planning/awp-prototype-plan.md`](../planning/awp-prototype-plan.md).
 
 ## Workspace layout
 
@@ -438,6 +438,7 @@ These appear in the planning docs but are **explicitly deferred** and not presen
 
 ## See also
 
+- [`PROCESS_OVERVIEW.md`](PROCESS_OVERVIEW.md) — 30-second walkthrough of the full pipeline
 - [`PHASE1_REVIEW.md`](PHASE1_REVIEW.md) — synthesised executive summary of Phase 1's outcome
 - [`DECISIONS.md`](DECISIONS.md) — design decisions log + framework recommendation
 - [`PAIN_POINTS.md`](PAIN_POINTS.md) — friction log + Phase 4 synthesis

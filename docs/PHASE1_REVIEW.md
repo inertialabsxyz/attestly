@@ -73,6 +73,7 @@ This is one reading. The alternatives — "commit to Rig now and do the spike", 
 
 ## Source files
 
+- [`docs/PROCESS_OVERVIEW.md`](PROCESS_OVERVIEW.md) — 30-second walkthrough of the full pipeline
 - [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) — what is currently implemented (modules, flows, swim lanes)
 - [`docs/DECISIONS.md`](DECISIONS.md) — design decisions log, framework comparison, recommendation
 - [`docs/PAIN_POINTS.md`](PAIN_POINTS.md) — running friction log, Phase 4 synthesis at the top
