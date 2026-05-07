@@ -232,6 +232,119 @@ Verifiers / MCP) makes a string-based wire protocol unavoidable.
 
 ---
 
+## Phase 3 — Attestation Batching
+
+### Q1. What's the right batch trigger balance — time vs count?
+
+**Proposed answer (deferred to human):** *Both, with count as the primary
+trigger and time as a liveness backstop.* The Batcher
+(`crates/awp-agents/src/batcher.rs`) checks the count condition
+synchronously inside `submit` so a busy producer hits a deterministic
+batch size of `max_batch_size`, while a separate `tokio::time::interval`
+polls the age of the oldest buffered attestation once per second to fire
+the time-based trigger when traffic is sparse. Defaults match the plan
+(`max_batch_size: 10, max_batch_age_secs: 60, min_batch_size: 1`), so a
+high-volume run produces tightly-packed batches of 10 and a low-volume
+run still flushes within ~60 seconds even if a single attestation arrives
+in isolation.
+
+The cost of the time backstop is one wakeup per second per Batcher; the
+cost of *not* having it is unbounded latency for the last attestation
+in a quiet hour. We accept the wakeup. `min_batch_size` exists for
+shutdown-only behaviour (Phase 3 prompt: "On shutdown, flushes any
+buffered attestations as a final batch (respecting `min_batch_size`)") —
+with the default of 1, shutdown always flushes; a non-default
+`min_batch_size > 1` lets a caller drop a too-small final buffer rather
+than seal it.
+
+**Recommended decision for the human:** ratify "count primary, time
+backstop, shutdown honours `min_batch_size`". Phase 4 might revisit if
+on-chain anchoring (Phase 2 of AWP overall) introduces gas-cost
+incentives to delay flushes — at that point count alone is too rigid and
+the trigger should also consider chain congestion.
+
+---
+
+### Q2. Should proof be stored, or regenerated on demand?
+
+**Proposed answer (deferred to human):** *Store the proof.* Phase 3's
+SQLite schema gives `proofs` its own table, with one row per attestation
+holding the `proof_path` as a JSON BLOB. Three reasons:
+
+1. **The exit-criterion demands it.** The plan requires "Proof
+   verification works given only root + proof + attestation" — if the
+   proof has to be re-derived from the full leaf set, that contract is
+   leaking the rest of the batch as an implicit input. Storing the proof
+   makes "given only root + proof + attestation" literally true.
+2. **Regeneration costs the full leaf set.** rs_merkle needs every leaf
+   to walk the proof path; we'd be loading the entire batch from disk on
+   every verification. A 10-leaf batch is cheap, but a 1000-leaf batch
+   (a plausible Phase 2-of-AWP scale) is not.
+3. **Proofs are write-once.** Each batch is sealed in one transaction and
+   never mutated, so storage cost grows linearly with attestation count
+   and there's no consistency-management overhead. A proof_path of 10
+   sibling hashes plus positions encodes to ~700 bytes of JSON — well
+   under the size of the attestation it witnesses.
+
+**Edge case considered:** if the batch root is somehow corrupted, a
+stored proof points at a now-invalid root and verification fails
+silently. We accept this — corruption of the `batches.merkle_root`
+column is observable from outside the proof system (the batch's
+attestations, when re-hashed, won't match the stored root) so a future
+auditor still has a way to detect the tampering.
+
+**Recommended decision for the human:** ratify "store the proof, never
+regenerate". Phase 4 might revisit only if storage growth becomes a
+concern — and even then, the right answer is probably "tier old batches
+to cheaper storage", not "regenerate on demand".
+
+---
+
+### Q3. How to handle late attestations (batch already created)?
+
+**Proposed answer (deferred to human):** *Late attestations join the next
+batch — there is no "this attestation belonged in batch X" recovery
+path.* The Batcher's `submit` always pushes onto the live buffer; it
+doesn't reach into already-sealed batches to retroactively splice
+anything in. This is a deliberate consequence of the plan's exit
+criterion ("All data persisted to SQLite", "Inclusion proof generated
+for each attestation"): a sealed batch's Merkle root is final, and the
+proofs covering it are only meaningful relative to that root. Mutating
+the batch would invalidate every proof we already issued.
+
+In practice, two scenarios drive the question:
+
+1. **Slow Worker / Verifier produces an attestation after its
+   Dispatcher run already returned.** Phase 3 sidesteps this — the
+   Dispatcher only submits to the Batcher *after* both attestations are
+   collected (`crates/awp-agents/src/dispatcher.rs`), and a stage
+   timeout produces a `Failed` execution that never reaches the
+   batcher-submit branch. The Worker/Verifier outputs that arrive
+   "late" never get submitted at all.
+2. **Producer and Batcher are decoupled (e.g. across an HTTP boundary, a
+   future Phase 2-of-AWP feature).** Here a late attestation can arrive
+   after the batch deadline. The Batcher still accepts it; it lands in
+   the next batch. Anyone correlating attestations to wall-clock time
+   needs to read `attestations.timestamp` (signed by the producer) — the
+   `batches.created_at` field is the *Batcher's* wall clock, not the
+   producer's, and they may differ.
+
+The trade-off we are explicitly *not* making is the "open batch"
+strategy where a batch stays mutable until anchored on chain. That would
+require deferring Merkle root computation, breaking the exit criterion
+(no proofs until the batch is closed), and complicating the schema. The
+prototype's append-only-once model is simpler and matches the durable
+attestation log Phase 1 already established.
+
+**Recommended decision for the human:** ratify "late attestations join
+the next batch; sealed batches are immutable". Revisit only if Phase 2
+of AWP overall introduces a producer-side retry path that needs
+"this should have been in batch X" semantics — at which point a
+separate "supplementary batches reference earlier attestations" table
+is probably cleaner than mutable batches.
+
+---
+
 ## Recurring friction (cross-phase)
 
-*To be populated as Phase 3/4 surface patterns.*
+*To be populated as Phase 4 surfaces patterns.*
