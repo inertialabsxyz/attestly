@@ -503,6 +503,61 @@ Keep a running log in `docs/DECISIONS.md`:
 
 ---
 
+## Phase 1 Postmortem
+
+Recorded at the close of Week 8, after the Phase 4 evaluation. Numbers
+are taken from `git log b28bd12..HEAD` (the implementation range from
+the project-reading commit through the Phase 4 evaluation merge) and
+from `wc -l` over the source tree.
+
+### Actual scope shipped vs. planned
+
+| Phase | Planned exit criteria | Shipped? |
+|-------|------------------------|----------|
+| 1 — Attestations & Signing | All 6 bullets in Phase 1 exit criteria | ✅ |
+| 2 — Dispatcher & Orchestration | All 5 bullets in Phase 2 exit criteria | ✅ |
+| 3 — Attestation Batching | All 6 bullets in Phase 3 exit criteria | ✅ |
+| 4 — Evaluate & Decide | All 6 bullets in Phase 4 exit criteria | ✅ |
+
+**Net new beyond the plan:** none. **Cut from the plan:** none. The
+Phase 4 stretch-task brief required exactly one of MCP / parallel
+verifiers; we shipped parallel verifiers (Option B).
+
+### Numbers
+
+- **Commits (non-merge, implementation-range b28bd12..HEAD):** 24 commits
+  across 4 phases — Phase 1: 6, Phase 2: 5, Phase 3: 6, Phase 4: 7
+  (4 implementation + 3 docs).
+- **Source LOC:** ~5,500 total. ~4,500 in `crates/*/src/`, ~440 in
+  `crates/awp-agents/tests/`, ~560 in `examples/`.
+- **Documented pain points:** 12 friction items across PAIN_POINTS.md
+  — 4 in Phase 1, 3 in Phase 2, 3 in Phase 3, plus a 5-point Phase 4
+  synthesis at the top + a Phase 4 stretch-task entry at the bottom.
+- **Test count:** 79 passing tests (46 in `awp-core`, 33 in `awp-agents`)
+  plus 9 integration tests across `crates/awp-agents/tests/`.
+
+### Stretch task chosen
+
+**Option B — parallel verifiers.** Implemented in
+`crates/awp-agents/src/parallel.rs` as `ParallelDispatcher` running N
+verifiers concurrently against one Worker via
+`futures::future::try_join_all`, with disagreement detection over
+`(attestation_valid, answer_correct)` tuples. Demonstrated in the new
+`examples/parallel_verifiers.rs` checkpoint binary which runs an
+honest-3-verifier case (unanimous agreement) and a 2-honest +
+1-adversarial case (disagreement detection).
+
+### Framework recommendation
+
+See [`docs/DECISIONS.md`](../docs/DECISIONS.md). TL;DR: Option C
+(thin custom layer on Rig) carries the strongest evidence; Option A
+(stay with AutoAgents) is currently indistinguishable in practice
+because the framework has zero lines of code in the implementation —
+the recommendation is to commit to Rig the day LLM integration is
+wired into Worker/Verifier.
+
+---
+
 ## Next Steps After Week 8
 
 Depending on decision:
