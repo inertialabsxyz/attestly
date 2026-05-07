@@ -2,10 +2,13 @@
 //!
 //! Phase 1 shipped Worker, Verifier, and the shared tools they call. Phase 2
 //! added the Dispatcher coordinator. Phase 3 adds the Batcher service which
-//! consumes attestations and persists them as Merkle batches.
+//! consumes attestations and persists them as Merkle batches. Phase 4 adds
+//! the [`parallel::ParallelDispatcher`] stretch task — N verifiers running
+//! concurrently against one Worker with disagreement detection.
 
 pub mod batcher;
 pub mod dispatcher;
+pub mod parallel;
 pub mod tools;
 pub mod verifier;
 pub mod worker;
@@ -15,6 +18,7 @@ pub use batcher::{
     DEFAULT_MIN_BATCH_SIZE,
 };
 pub use dispatcher::{Dispatcher, DispatcherConfig, DispatcherError, DEFAULT_STAGE_TIMEOUT};
+pub use parallel::{ParallelDispatcher, ParallelDispatcherError, ParallelExecution};
 pub use tools::{calculate, verify_attestation, verify_attestation_struct, VerificationResult};
 pub use verifier::{Verifier, VerifierAgent, VerifierError};
 pub use worker::{Worker, WorkerAgent, WorkerError, WorkerTask};
