@@ -1,13 +1,16 @@
 //! ed25519 keypair management and SHA-256 helpers for AWP attestations.
 //!
-//! Keys are ephemeral in Phase 1 — every agent generates a fresh keypair on
-//! startup. Persistence and identity registration are deferred to Phase 2 of
-//! AWP overall (see `planning/awp-prototype-plan.md` → "What's Explicitly
-//! Deferred").
+//! Keys can either be generated ephemerally via [`AgentKeypair::generate`] or
+//! constructed from raw 32-byte secrets via [`AgentKeypair::from_secret_bytes`]
+//! — the latter is what [`crate::identity::FileIdentityStore`] uses to load
+//! a persisted identity from disk. Production deployments should prefer an
+//! HSM- or KMS-backed [`crate::identity::IdentityStore`] over the file-based
+//! store; see `crate::identity` for guidance.
 
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use rand::rngs::OsRng;
 use sha2::{Digest, Sha256};
+use thiserror::Error;
 
 use crate::attestation::Attestation;
 
@@ -20,11 +23,37 @@ pub fn sha256(bytes: &[u8]) -> [u8; 32] {
     hasher.finalize().into()
 }
 
+/// Errors surfaced when reconstructing or validating an [`AgentKeypair`].
+///
+/// Keypair generation itself is infallible (the OS RNG is treated as a
+/// trusted source); these only fire on the `from_secret_bytes` path.
+#[derive(Debug, Error)]
+pub enum KeypairError {
+    /// The verifying key derived from the secret does not match the expected
+    /// public key supplied by the caller. Indicates a tampered or mismatched
+    /// identity file.
+    #[error("public key derived from secret does not match expected public key")]
+    PublicMismatch,
+}
+
 /// Wraps an ed25519 signing key plus its derived verifying key.
 #[derive(Clone)]
 pub struct AgentKeypair {
     signing: SigningKey,
     verifying: VerifyingKey,
+}
+
+// Manual Debug — never include the secret signing key in any debug output.
+// Required so callers can `#[derive(Debug)]` types that embed an
+// AgentKeypair (and so error variants that wrap the keypair can derive
+// Debug for `unwrap_err` use in tests).
+impl std::fmt::Debug for AgentKeypair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AgentKeypair")
+            .field("public", &hex::encode(self.verifying.to_bytes()))
+            .field("secret", &"<redacted>")
+            .finish()
+    }
 }
 
 impl AgentKeypair {
@@ -33,6 +62,31 @@ impl AgentKeypair {
         let signing = SigningKey::generate(&mut OsRng);
         let verifying = signing.verifying_key();
         Self { signing, verifying }
+    }
+
+    /// Reconstruct a keypair from the 32-byte ed25519 secret. The verifying
+    /// key is rederived; if `expected_public` is provided we cross-check it
+    /// against the rederived value and return [`KeypairError::PublicMismatch`]
+    /// on disagreement (defence in depth against tampered identity files).
+    pub fn from_secret_bytes(
+        secret: &[u8; 32],
+        expected_public: Option<&[u8; 32]>,
+    ) -> Result<Self, KeypairError> {
+        let signing = SigningKey::from_bytes(secret);
+        let verifying = signing.verifying_key();
+        if let Some(expected) = expected_public {
+            if &verifying.to_bytes() != expected {
+                return Err(KeypairError::PublicMismatch);
+            }
+        }
+        Ok(Self { signing, verifying })
+    }
+
+    /// The 32-byte ed25519 secret. Treat with care — this is the secret
+    /// material that any consumer must persist behind the same protections as
+    /// any other private key.
+    pub fn secret_bytes(&self) -> [u8; 32] {
+        self.signing.to_bytes()
     }
 
     /// The 32-byte verifying-key bytes that go into `Attestation::agent_pubkey`.
@@ -141,6 +195,32 @@ mod tests {
         // would not match.
         a.agent_pubkey = [0xff; 32];
         assert!(!verify_attestation_signature(&a));
+    }
+
+    #[test]
+    fn keypair_round_trips_through_secret_bytes() {
+        let kp = AgentKeypair::generate();
+        let secret = kp.secret_bytes();
+        let public = kp.public_bytes();
+
+        let restored = AgentKeypair::from_secret_bytes(&secret, Some(&public)).unwrap();
+        assert_eq!(restored.public_bytes(), public);
+
+        // Signatures from the restored keypair must verify under the original
+        // public key.
+        let mut a = unsigned("84");
+        restored.sign_attestation(&mut a);
+        assert!(verify_attestation_signature(&a));
+        assert_eq!(a.agent_pubkey, public);
+    }
+
+    #[test]
+    fn from_secret_bytes_rejects_mismatched_public() {
+        let kp_a = AgentKeypair::generate();
+        let kp_b = AgentKeypair::generate();
+        let err = AgentKeypair::from_secret_bytes(&kp_a.secret_bytes(), Some(&kp_b.public_bytes()))
+            .unwrap_err();
+        assert!(matches!(err, KeypairError::PublicMismatch));
     }
 
     #[test]
