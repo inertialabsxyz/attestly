@@ -131,6 +131,107 @@ combination.
 
 ---
 
+## Phase 2 — Dispatcher & Orchestration
+
+### Q1. Where does coordination state live — in Dispatcher, or external store?
+
+**Proposed answer (deferred to human):** *Both, but the canonical encoding
+lives in `awp-core`.* `TaskExecution` and `ExecutionStatus` are defined in
+`crates/awp-core/src/task.rs` (not in `awp-agents`) so any consumer — the
+Dispatcher today, a dashboard tomorrow, the Phase 3 Batcher — can serialize
+and reason about an execution without depending on the agents crate. The
+running Dispatcher holds the in-memory `TaskExecution` for the duration of
+one task; the durable copy lives in `data/executions.json` as an
+id-referenced record (`TaskExecutionRecord`) that re-joins with
+`data/attestations.json` on load via `load_execution(id)`
+(`crates/awp-core/src/execution.rs`).
+
+The split — full attestations in one file, executions referencing them by
+id in another — keeps both files independently appendable and avoids
+duplicating the (much larger) attestation payloads in two places. Phase 3
+collapses this into SQLite, but the Phase 2 layout is a clean stepping
+stone: the SQLite schema in the plan already mirrors the two-table
+attestations + executions split.
+
+**Recommended decision for the human:** ratify "data structures in
+`awp-core`, file IO in `awp-core::execution`, lifecycle ownership in
+Dispatcher". The Dispatcher does not own the type definition because that
+would force the Batcher (Phase 3) and any future external consumer to
+take an `awp-agents` dependency just to deserialise an execution.
+
+---
+
+### Q2. How does AutoAgents handle agent-to-agent communication?
+
+**Proposed answer (deferred to human):** *Unknown — and Phase 2 sidesteps
+the question.* As noted in Phase 1 Q1, AutoAgents v0.3.7 ships single-agent
+examples (`AgentBuilder<_, DirectAgent>::new(...).run()`) but no documented
+worker-verifier or multi-agent coordination pattern. Phase 1 already
+deferred the framework integration; Phase 2 inherits that deferral and
+ships the Dispatcher as a plain async type that takes `&dyn WorkerAgent`
+and `&dyn VerifierAgent` trait objects.
+
+In practice, the Dispatcher's "agent communication" reduces to two trait
+calls:
+
+```rust
+let worker_att = worker.run(&task).await?;
+let verifier_att = verifier.run(&task, &worker_att).await?;
+```
+
+This is precisely what an AutoAgents-native Dispatcher would also do —
+*await one agent, pass its output as context to the next* — so the swap
+to a framework-driven actor model later should be a surface change to the
+Dispatcher, not a re-design. The interesting question Phase 4 needs to
+answer is whether AutoAgents' actor model adds value over plain trait
+objects for *this* coordination shape, or whether the actor abstraction
+is gratuitous when the only message pattern is sequential request /
+response with a typed return.
+
+**Recommended decision for the human:** keep the trait-object Dispatcher
+through Phase 4 as the framework-comparison baseline. If AutoAgents'
+actor channels add real value (e.g. for the parallel-verifiers stretch
+task), that's a strong signal for Decision Option A; if not, it's a
+signal for C (custom on Rig).
+
+---
+
+### Q3. What's the cleanest way to pass attestation context to the Verifier?
+
+**Proposed answer (deferred to human):** *Pass the typed `Attestation`
+struct directly, not its JSON.* The `VerifierAgent` trait takes
+`worker_attestation: &Attestation` (`crates/awp-agents/src/verifier.rs`)
+so the Dispatcher hands over the Worker's signed record by reference. The
+Verifier still calls `verify_attestation_struct` itself — *the Dispatcher
+does not pre-verify and pass a "trust me" boolean* — because the Verifier's
+job is to be the sceptic, not delegate scepticism upstream. This matches
+the plan's "the Verifier should still call `verify_attestation` itself
+rather than trusting the Dispatcher's hand-off".
+
+We considered three alternatives:
+
+1. **Pass the JSON string** — matches the AutoAgents tool surface
+   (`verify_attestation(attestation_json: String)`) but loses type safety
+   at every internal hand-off and forces a parse round-trip the
+   Dispatcher already paid for once.
+2. **Pass only the attestation id, have the Verifier reload from disk** —
+   tempting because it would let Verifiers pick up work asynchronously,
+   but adds a disk read and a "what if the file isn't fsynced" failure
+   mode for no Phase-2 benefit.
+3. **Pass `&Attestation` directly (chosen)** — type-checked, zero-copy,
+   keeps the Worker→Verifier contract obvious.
+
+When the framework-driven path (LLM tool calls) lands, the
+`verify_attestation` tool's JSON-string signature stays as the *tool*
+surface, while the in-process Dispatcher → Verifier hand-off remains
+typed. They serve different audiences (LLM vs. compiler).
+
+**Recommended decision for the human:** ratify the typed hand-off as the
+in-process contract. Revisit only if Phase 4's stretch task (parallel
+Verifiers / MCP) makes a string-based wire protocol unavoidable.
+
+---
+
 ## Recurring friction (cross-phase)
 
-*To be populated as Phase 2/3/4 surface patterns.*
+*To be populated as Phase 3/4 surface patterns.*
