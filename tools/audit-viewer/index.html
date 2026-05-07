@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AWP Audit Viewer</title>
+<style>
+:root {
+    --ink: #1a1a1a;
+    --ink-muted: #555;
+    --ink-faint: #888;
+    --rule: #d8d8d8;
+    --rule-soft: #ececec;
+    --paper: #fafaf8;
+    --paper-card: #ffffff;
+    --green: #2f7a3a;
+    --amber: #b07b00;
+    --red: #a02020;
+    --grey: #888;
+}
+* { box-sizing: border-box; }
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+        "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+}
+header {
+    border-bottom: 1px solid var(--rule);
+    padding: 28px 40px 20px 40px;
+    background: var(--paper-card);
+}
+header h1 {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+header p.lede {
+    margin: 0;
+    color: var(--ink-muted);
+    font-size: 13px;
+}
+main {
+    padding: 24px 40px 60px 40px;
+    max-width: 1200px;
+}
+section {
+    margin-bottom: 28px;
+}
+section h2 {
+    margin: 0 0 10px 0;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--ink-faint);
+    font-weight: 600;
+}
+.dropzone {
+    border: 1.5px dashed var(--rule);
+    background: var(--paper-card);
+    border-radius: 4px;
+    padding: 28px 24px;
+    text-align: center;
+    color: var(--ink-muted);
+    transition: border-color 120ms ease, background 120ms ease;
+}
+.dropzone.dragover {
+    border-color: var(--ink);
+    background: #f4f1ea;
+}
+.dropzone p {
+    margin: 0 0 8px 0;
+}
+.dropzone input[type=file] {
+    margin-top: 6px;
+}
+.file-summary {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--ink-muted);
+}
+.file-summary span.ok { color: var(--green); }
+.file-summary span.warn { color: var(--amber); }
+
+table.timeline {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--paper-card);
+    border: 1px solid var(--rule);
+}
+table.timeline th, table.timeline td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+    font-variant-numeric: tabular-nums;
+}
+table.timeline th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--ink-faint);
+    background: #f4f2ee;
+    border-bottom: 1px solid var(--rule);
+    font-weight: 600;
+}
+table.timeline tr.row { cursor: pointer; }
+table.timeline tr.row:hover { background: #f7f5f0; }
+table.timeline tr.row.expanded { background: #f4f1ea; }
+table.timeline td.col-time { white-space: nowrap; color: var(--ink-muted); width: 168px; }
+table.timeline td.col-agents { white-space: nowrap; }
+table.timeline td.col-input, table.timeline td.col-output { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+table.timeline td.col-status { white-space: nowrap; width: 130px; }
+
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    border: 1px solid transparent;
+}
+.badge.green { color: var(--green); border-color: var(--green); background: #ecf5ee; }
+.badge.amber { color: var(--amber); border-color: var(--amber); background: #f7f0dc; }
+.badge.red   { color: var(--red);   border-color: var(--red);   background: #f6e6e6; }
+.badge.grey  { color: var(--grey);  border-color: var(--rule);  background: #f0f0f0; }
+
+tr.detail > td {
+    padding: 16px 20px 22px 20px;
+    background: #f9f7f1;
+    border-bottom: 1px solid var(--rule);
+}
+.receipt-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+.receipt {
+    background: var(--paper-card);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 14px 16px;
+}
+.receipt h3 {
+    margin: 0 0 6px 0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--ink-faint);
+    font-weight: 600;
+}
+.receipt .agent-line {
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+.kv {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 4px 12px;
+    font-size: 12px;
+}
+.kv dt {
+    color: var(--ink-faint);
+    font-weight: 500;
+}
+.kv dd {
+    margin: 0;
+    color: var(--ink);
+    word-break: break-all;
+    font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+.kv dd.plain { font-family: inherit; }
+.verify-line {
+    margin-top: 10px;
+    font-size: 12px;
+    border-top: 1px solid var(--rule-soft);
+    padding-top: 8px;
+}
+.verify-line.ok  { color: var(--green); }
+.verify-line.bad { color: var(--red); font-weight: 600; }
+.verify-line.pending { color: var(--ink-faint); }
+
+.empty {
+    color: var(--ink-faint);
+    background: var(--paper-card);
+    border: 1px dashed var(--rule);
+    border-radius: 4px;
+    padding: 24px;
+    text-align: center;
+    font-size: 13px;
+}
+footer {
+    color: var(--ink-faint);
+    font-size: 11px;
+    border-top: 1px solid var(--rule);
+    padding: 14px 40px;
+    background: var(--paper-card);
+    margin-top: 40px;
+}
+.test-status {
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin-top: 8px;
+}
+.test-status.ok { color: var(--green); }
+.test-status.bad { color: var(--red); font-weight: 600; }
+.bad-line {
+    background: #fbeaea;
+    border: 1px solid var(--red);
+    color: var(--red);
+    padding: 8px 12px;
+    border-radius: 3px;
+    font-size: 12px;
+    margin-top: 8px;
+}
+</style>
+</head>
+<body>
+<header>
+    <h1>AWP Audit Viewer</h1>
+    <p class="lede">Render and re-verify signed agent attestations locally. No data leaves this page.</p>
+</header>
+
+<main>
+    <section>
+        <h2>Receipts</h2>
+        <div id="dropzone" class="dropzone">
+            <p>Drop <code>attestations.json</code> and <code>executions.json</code> here, or:</p>
+            <input id="filepicker" type="file" multiple accept=".json,.jsonl,application/json">
+            <div id="file-summary" class="file-summary"></div>
+        </div>
+        <div id="parity-status" class="test-status">Self-test pending&hellip;</div>
+    </section>
+
+    <section>
+        <h2>Timeline</h2>
+        <div id="timeline-host"></div>
+    </section>
+</main>
+
+<footer>
+    Signature re-verification runs in your browser using a vendored ed25519
+    implementation (<code>vendor/ed25519.js</code>). The signing payload is
+    reconstructed to byte-match <code>Attestation::signing_payload</code> in
+    <code>crates/awp-core/src/attestation.rs</code>.
+</footer>
+
+<script src="vendor/ed25519.js"></script>
+<script src="signing-payload.js"></script>
+<script>
+"use strict";
+
+// ---------- model ----------------------------------------------------------
+
+const state = {
+    attestations: new Map(),     // id -> attestation
+    executions: [],              // TaskExecutionRecord[]
+    fileNames: { att: null, exec: null },
+    expanded: new Set(),         // task_id strings (or "orphan-<id>")
+};
+
+const signingPayloadBytes = signingPayload.signingPayloadBytes;
+
+// ---------- file ingestion -------------------------------------------------
+
+function classifyJsonlLine(obj) {
+    if (obj && typeof obj === "object") {
+        if ("agent_pubkey" in obj && "signature" in obj) return "attestation";
+        if ("task_id" in obj && "task_input" in obj) return "execution";
+    }
+    return null;
+}
+
+async function ingestFile(file) {
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    let kind = null;
+    let attCount = 0;
+    let execCount = 0;
+    let parseErrs = 0;
+    for (const line of lines) {
+        let obj;
+        try { obj = JSON.parse(line); }
+        catch (_) { parseErrs++; continue; }
+        const k = classifyJsonlLine(obj);
+        if (k === "attestation") {
+            state.attestations.set(obj.id, obj);
+            attCount++;
+            kind = kind || "att";
+        } else if (k === "execution") {
+            state.executions.push(obj);
+            execCount++;
+            kind = kind || "exec";
+        } else {
+            parseErrs++;
+        }
+    }
+    if (kind === "att") state.fileNames.att = file.name;
+    if (kind === "exec") state.fileNames.exec = file.name;
+    return { name: file.name, attCount, execCount, parseErrs, kind };
+}
+
+// ---------- formatting helpers ---------------------------------------------
+
+function truncMid(s, head = 8, tail = 8) {
+    if (!s) return "";
+    if (s.length <= head + tail + 1) return s;
+    return s.slice(0, head) + "…" + s.slice(-tail);
+}
+
+function truncEnd(s, n) {
+    if (!s) return "";
+    return s.length > n ? s.slice(0, n - 1) + "…" : s;
+}
+
+function fmtTimestamp(epochSeconds) {
+    if (typeof epochSeconds !== "number") return "";
+    try {
+        const d = new Date(epochSeconds * 1000);
+        // ISO local-ish: yyyy-mm-dd HH:MM:SSZ — readable, sortable.
+        return d.toISOString().replace("T", " ").replace(".000Z", " UTC");
+    } catch (_) { return String(epochSeconds); }
+}
+
+function statusToBadge(executionStatus, workerAtt, verifierAtt) {
+    // Crypto check first: any constituent attestation with a known-bad
+    // signature flips the row red regardless of execution status. The
+    // verification cache is only populated after eagerVerifyAll() runs;
+    // until then we fall through to the execution-status-derived badge.
+    for (const att of [workerAtt, verifierAtt]) {
+        if (att && verificationCache.get(att.id) === false) {
+            return { cls: "red", label: "🔴 Signature invalid" };
+        }
+    }
+    if (executionStatus && typeof executionStatus === "object") {
+        if ("Failed" in executionStatus) {
+            return { cls: "red", label: "🔴 Failed", detail: executionStatus.Failed };
+        }
+        if ("Complete" in executionStatus) {
+            const c = executionStatus.Complete;
+            if (c.attestation_valid && c.answer_correct) {
+                return { cls: "green", label: "🟢 Verified" };
+            }
+            return {
+                cls: "amber",
+                label: "🟡 Verified (disputed)",
+                detail: c,
+            };
+        }
+    }
+    if (typeof executionStatus === "string") {
+        // Pending / WorkerRunning / etc. — surface as grey.
+        return { cls: "grey", label: "⚪ " + executionStatus };
+    }
+    return { cls: "grey", label: "⚪ Unknown" };
+}
+
+function attestationStatusSummary(status) {
+    if (status === "Completed") return "Completed";
+    if (status && typeof status === "object") {
+        if ("Failed" in status) return "Failed: " + status.Failed;
+        if ("Verified" in status) {
+            const v = status.Verified;
+            return (
+                "Verified — attestation_valid=" +
+                v.attestation_valid +
+                ", answer_correct=" +
+                v.answer_correct
+            );
+        }
+    }
+    return JSON.stringify(status);
+}
+
+// ---------- timeline rendering ---------------------------------------------
+
+function render() {
+    renderFileSummary();
+    renderTimeline();
+}
+
+function renderFileSummary() {
+    const host = document.getElementById("file-summary");
+    const parts = [];
+    if (state.fileNames.att) {
+        parts.push(
+            `<span class="ok">${escapeHtml(state.fileNames.att)}</span>: ${state.attestations.size} attestation${state.attestations.size === 1 ? "" : "s"}`,
+        );
+    }
+    if (state.fileNames.exec) {
+        parts.push(
+            `<span class="ok">${escapeHtml(state.fileNames.exec)}</span>: ${state.executions.length} execution${state.executions.length === 1 ? "" : "s"}`,
+        );
+    }
+    if (parts.length === 0) {
+        host.textContent = "";
+    } else {
+        host.innerHTML = "Loaded — " + parts.join(" · ");
+    }
+}
+
+function escapeHtml(s) {
+    return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+}
+
+function renderTimeline() {
+    const host = document.getElementById("timeline-host");
+    if (state.executions.length === 0 && state.attestations.size === 0) {
+        host.innerHTML =
+            '<div class="empty">No data loaded. Run <code>cargo run --example dispatcher_flow</code> to populate <code>data/attestations.json</code> and <code>data/executions.json</code>, then drop both files above.</div>';
+        return;
+    }
+
+    const referencedAttestationIds = new Set();
+    for (const exec of state.executions) {
+        if (exec.worker_attestation_id) referencedAttestationIds.add(exec.worker_attestation_id);
+        if (exec.verifier_attestation_id) referencedAttestationIds.add(exec.verifier_attestation_id);
+    }
+    const orphans = [];
+    for (const att of state.attestations.values()) {
+        if (!referencedAttestationIds.has(att.id)) orphans.push(att);
+    }
+
+    // Sort executions by started_at ascending, then orphans by timestamp.
+    const execs = state.executions
+        .slice()
+        .sort((a, b) => (a.started_at || 0) - (b.started_at || 0));
+    orphans.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+    let html =
+        '<table class="timeline"><thead><tr>' +
+        "<th>Time</th>" +
+        "<th>Agents (worker → verifier)</th>" +
+        "<th>Task</th>" +
+        "<th>Decision</th>" +
+        "<th>Status</th>" +
+        "</tr></thead><tbody>";
+
+    for (const exec of execs) {
+        html += renderExecutionRow(exec);
+    }
+    for (const att of orphans) {
+        html += renderOrphanRow(att);
+    }
+    html += "</tbody></table>";
+    host.innerHTML = html;
+
+    // Schedule per-attestation re-verification for visible expanded rows.
+    for (const key of state.expanded) {
+        scheduleVerify(key);
+    }
+}
+
+function renderExecutionRow(exec) {
+    const workerAtt = exec.worker_attestation_id
+        ? state.attestations.get(exec.worker_attestation_id) || null
+        : null;
+    const verifierAtt = exec.verifier_attestation_id
+        ? state.attestations.get(exec.verifier_attestation_id) || null
+        : null;
+    const badge = statusToBadge(exec.status, workerAtt, verifierAtt);
+    const key = "exec-" + exec.task_id;
+    const expanded = state.expanded.has(key);
+
+    const agents =
+        (workerAtt ? escapeHtml(workerAtt.agent_id) : "—") +
+        " → " +
+        (verifierAtt ? escapeHtml(verifierAtt.agent_id) : "—");
+
+    const decision = workerAtt
+        ? escapeHtml(truncEnd(workerAtt.output, 36))
+        : "<em style='color:var(--ink-faint)'>(no worker output)</em>";
+
+    let row =
+        `<tr class="row${expanded ? " expanded" : ""}" data-key="${escapeHtml(key)}">` +
+        `<td class="col-time">${escapeHtml(fmtTimestamp(exec.started_at))}</td>` +
+        `<td class="col-agents">${agents}</td>` +
+        `<td class="col-input">${escapeHtml(truncEnd(exec.task_input || "", 32))}</td>` +
+        `<td class="col-output">${decision}</td>` +
+        `<td class="col-status"><span class="badge ${badge.cls}">${escapeHtml(badge.label)}</span></td>` +
+        "</tr>";
+
+    if (expanded) {
+        row +=
+            '<tr class="detail"><td colspan="5">' +
+            renderDetailPair(workerAtt, verifierAtt, exec) +
+            "</td></tr>";
+    }
+    return row;
+}
+
+function renderOrphanRow(att) {
+    const key = "orphan-" + att.id;
+    const expanded = state.expanded.has(key);
+    const badge = { cls: "grey", label: "⚪ Orphan" };
+    let row =
+        `<tr class="row${expanded ? " expanded" : ""}" data-key="${escapeHtml(key)}">` +
+        `<td class="col-time">${escapeHtml(fmtTimestamp(att.timestamp))}</td>` +
+        `<td class="col-agents">${escapeHtml(att.agent_id)}</td>` +
+        `<td class="col-input"><em style='color:var(--ink-faint)'>(no execution row)</em></td>` +
+        `<td class="col-output">${escapeHtml(truncEnd(att.output || "", 36))}</td>` +
+        `<td class="col-status"><span class="badge ${badge.cls}">${escapeHtml(badge.label)}</span></td>` +
+        "</tr>";
+    if (expanded) {
+        row +=
+            '<tr class="detail"><td colspan="5">' +
+            renderDetailPair(att, null, null) +
+            "</td></tr>";
+    }
+    return row;
+}
+
+function renderDetailPair(workerAtt, verifierAtt, exec) {
+    let html = '<div class="receipt-pair">';
+    html += renderReceipt("Worker receipt", workerAtt, exec);
+    if (verifierAtt) {
+        html += renderReceipt("Verifier receipt", verifierAtt, exec);
+    } else if (exec) {
+        html +=
+            '<div class="receipt"><h3>Verifier receipt</h3>' +
+            '<div class="agent-line" style="color:var(--ink-faint)">No verifier attestation for this execution.</div>' +
+            "</div>";
+    }
+    html += "</div>";
+    return html;
+}
+
+function renderReceipt(title, att, exec) {
+    if (!att) {
+        return (
+            '<div class="receipt"><h3>' +
+            escapeHtml(title) +
+            "</h3>" +
+            '<div class="agent-line" style="color:var(--ink-faint)">No attestation present.</div>' +
+            "</div>"
+        );
+    }
+    const refStr = att.references ? att.references : "—";
+    return (
+        '<div class="receipt" data-att-id="' +
+        escapeHtml(att.id) +
+        '"><h3>' +
+        escapeHtml(title) +
+        "</h3>" +
+        '<div class="agent-line"><strong>' +
+        escapeHtml(att.agent_id) +
+        "</strong> &nbsp;·&nbsp; " +
+        escapeHtml(fmtTimestamp(att.timestamp)) +
+        "</div>" +
+        '<dl class="kv">' +
+        '<dt>id</dt><dd>' + escapeHtml(att.id) + "</dd>" +
+        '<dt>pubkey</dt><dd>' + escapeHtml(truncMid(att.agent_pubkey, 8, 8)) + "</dd>" +
+        '<dt>task hash</dt><dd>' + escapeHtml(truncMid(att.task_hash, 8, 8)) + "</dd>" +
+        '<dt>output hash</dt><dd>' + escapeHtml(truncMid(att.output_hash, 8, 8)) + "</dd>" +
+        '<dt class="plain">status</dt><dd class="plain">' +
+        escapeHtml(attestationStatusSummary(att.status)) + "</dd>" +
+        '<dt>references</dt><dd>' + escapeHtml(refStr === "—" ? "—" : truncMid(refStr, 8, 8)) + "</dd>" +
+        '<dt>signature</dt><dd>' + escapeHtml(truncMid(att.signature, 8, 8)) + "</dd>" +
+        "</dl>" +
+        '<div class="verify-line pending" data-verify-for="' +
+        escapeHtml(att.id) +
+        '">⏳ verifying signature in browser&hellip;</div>' +
+        "</div>"
+    );
+}
+
+// ---------- in-browser signature verification ------------------------------
+
+const verificationCache = new Map(); // attestation id -> boolean
+
+async function verifyAttestation(att) {
+    if (verificationCache.has(att.id)) return verificationCache.get(att.id);
+    let ok = false;
+    try {
+        const payload = signingPayloadBytes(att);
+        ok = await ed25519.verify(att.signature, payload, att.agent_pubkey);
+    } catch (_) {
+        ok = false;
+    }
+    verificationCache.set(att.id, ok);
+    return ok;
+}
+
+function scheduleVerify(rowKey) {
+    // Find every receipt under the expanded row and run verification.
+    const rows = document.querySelectorAll(
+        'tr.row[data-key="' + cssEscape(rowKey) + '"] + tr.detail',
+    );
+    rows.forEach((tr) => {
+        tr.querySelectorAll(".verify-line[data-verify-for]").forEach(
+            async (line) => {
+                const id = line.getAttribute("data-verify-for");
+                const att = state.attestations.get(id);
+                if (!att) {
+                    line.className = "verify-line bad";
+                    line.textContent = "✗ attestation missing";
+                    return;
+                }
+                const ok = await verifyAttestation(att);
+                if (ok) {
+                    line.className = "verify-line ok";
+                    line.textContent = "✓ signature verified in browser";
+                } else {
+                    line.className = "verify-line bad";
+                    line.textContent =
+                        "✗ signature invalid — receipt has been altered or the key does not match";
+                }
+            },
+        );
+    });
+}
+
+function cssEscape(s) {
+    return s.replace(/(["\\])/g, "\\$1");
+}
+
+// ---------- interactions ---------------------------------------------------
+
+function onRowClick(ev) {
+    let el = ev.target;
+    while (el && el.tagName !== "TR") el = el.parentElement;
+    if (!el || !el.classList.contains("row")) return;
+    const key = el.getAttribute("data-key");
+    if (!key) return;
+    if (state.expanded.has(key)) state.expanded.delete(key);
+    else state.expanded.add(key);
+    render();
+}
+
+function setupDropzone() {
+    const dz = document.getElementById("dropzone");
+    const input = document.getElementById("filepicker");
+    dz.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dz.classList.add("dragover");
+    });
+    dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
+    dz.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        dz.classList.remove("dragover");
+        const files = Array.from(e.dataTransfer?.files || []);
+        await ingestFiles(files);
+    });
+    input.addEventListener("change", async () => {
+        const files = Array.from(input.files || []);
+        await ingestFiles(files);
+        input.value = "";
+    });
+    document.getElementById("timeline-host").addEventListener(
+        "click",
+        onRowClick,
+    );
+}
+
+async function ingestFiles(files) {
+    if (!files || files.length === 0) return;
+    // Reset state on every drop so re-loading after a tamper test doesn't
+    // accumulate stale data in the verification cache.
+    state.attestations.clear();
+    state.executions.length = 0;
+    state.fileNames = { att: null, exec: null };
+    state.expanded.clear();
+    verificationCache.clear();
+    const summaries = [];
+    for (const f of files) {
+        try {
+            summaries.push(await ingestFile(f));
+        } catch (err) {
+            summaries.push({ name: f.name, error: String(err) });
+        }
+    }
+    render();
+    // Verify every loaded attestation up-front so badges reflect signature
+    // validity without waiting for the user to expand each row. We
+    // re-render once when verification completes — a single repaint is
+    // cheap and avoids flicker for the common case (all valid).
+    await eagerVerifyAll();
+    render();
+}
+
+async function eagerVerifyAll() {
+    const tasks = [];
+    for (const att of state.attestations.values()) {
+        if (!verificationCache.has(att.id)) {
+            tasks.push(verifyAttestation(att));
+        }
+    }
+    if (tasks.length > 0) await Promise.all(tasks);
+}
+
+// ---------- self-test: byte-parity with Rust signing payload ---------------
+//
+// Stored sample: a real Attestation produced by `cargo run --example
+// dispatcher_flow`, with the exact JSON bytes that `Attestation::
+// signing_payload` produces in Rust. Confirms that the `signingPayloadBytes`
+// reconstruction in this file is byte-for-byte identical to the Rust
+// canonical encoding. If this fails, signature verification cannot be
+// trusted and the test status near the dropzone goes red.
+const SELF_TEST_ATT = {
+    id: "00000000-0000-0000-0000-000000000001",
+    agent_id: "test-agent",
+    agent_pubkey:
+        "0000000000000000000000000000000000000000000000000000000000000000",
+    task_hash:
+        "1111111111111111111111111111111111111111111111111111111111111111",
+    output_hash:
+        "2222222222222222222222222222222222222222222222222222222222222222",
+    output: "84",
+    status: "Completed",
+    references: null,
+    timestamp: 1700000000,
+    signature:
+        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+};
+const SELF_TEST_EXPECTED_PAYLOAD =
+    '{"id":"00000000-0000-0000-0000-000000000001",' +
+    '"agent_id":"test-agent",' +
+    '"agent_pubkey":"0000000000000000000000000000000000000000000000000000000000000000",' +
+    '"task_hash":"1111111111111111111111111111111111111111111111111111111111111111",' +
+    '"output_hash":"2222222222222222222222222222222222222222222222222222222222222222",' +
+    '"output":"84",' +
+    '"status":"Completed",' +
+    '"references":null,' +
+    '"timestamp":1700000000}';
+
+function runSelfTest() {
+    const status = document.getElementById("parity-status");
+    try {
+        const got = new TextDecoder().decode(signingPayloadBytes(SELF_TEST_ATT));
+        if (got === SELF_TEST_EXPECTED_PAYLOAD) {
+            status.className = "test-status ok";
+            status.textContent =
+                "✓ self-test: signing-payload bytes match Rust canonical encoding";
+            return true;
+        }
+        status.className = "test-status bad";
+        status.textContent =
+            "✗ self-test FAILED: signing-payload bytes do not match Rust canonical encoding";
+        return false;
+    } catch (e) {
+        status.className = "test-status bad";
+        status.textContent = "✗ self-test threw: " + String(e);
+        return false;
+    }
+}
+
+// ---------- bootstrap ------------------------------------------------------
+
+window.addEventListener("DOMContentLoaded", () => {
+    setupDropzone();
+    runSelfTest();
+    render();
+});
+</script>
+</body>
+</html>
