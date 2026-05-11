@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AWP — Cryptographic receipts for AI agents</title>
+<meta name="description" content="A signed, verifiable record of every task your agents complete. For audit, billing, and dispute resolution.">
+<style>
+:root {
+    --ink:        #0a0a0a;
+    --paper:      #f5f3ef;
+    --paper-card: #ffffff;
+    --muted:      #8a8680;
+    --rule:       #1a1a1a;
+    --rule-soft:  #2a2a2a;
+    --accent:     #d9ff3d;
+    --green:      #8aff8a;
+    --red:        #ff6b6b;
+    --amber:      #ffd45c;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI",
+        system-ui, "Helvetica Neue", Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+::selection { background: var(--accent); color: var(--ink); }
+
+a { color: inherit; text-decoration: none; }
+a:hover { opacity: 0.7; }
+
+.container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 40px;
+}
+
+/* ---------- header ---------- */
+
+header.nav {
+    position: sticky;
+    top: 0;
+    background: rgba(10, 10, 10, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--rule-soft);
+    z-index: 100;
+}
+header.nav .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 18px;
+    padding-bottom: 18px;
+}
+header.nav .brand {
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+}
+header.nav .brand .dot { color: var(--accent); }
+header.nav nav.links {
+    display: flex;
+    gap: 28px;
+    font-size: 14px;
+    color: var(--muted);
+}
+header.nav nav.links a:hover { color: var(--paper); opacity: 1; }
+header.nav .cta-btn {
+    background: var(--accent);
+    color: var(--ink);
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: transform 120ms ease;
+}
+header.nav .cta-btn:hover {
+    transform: translateY(-1px);
+    opacity: 1;
+}
+
+/* ---------- hero ---------- */
+
+section.hero {
+    padding: 120px 0 80px 0;
+    border-bottom: 1px solid var(--rule-soft);
+}
+section.hero .eyebrow {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    margin-bottom: 28px;
+}
+section.hero .eyebrow .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-right: 10px;
+    vertical-align: middle;
+}
+section.hero h1 {
+    font-size: clamp(56px, 8vw, 112px);
+    line-height: 0.96;
+    letter-spacing: -0.035em;
+    font-weight: 700;
+    margin: 0 0 32px 0;
+    max-width: 14ch;
+}
+section.hero h1 em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent);
+}
+section.hero p.subhead {
+    font-size: clamp(20px, 2vw, 26px);
+    line-height: 1.4;
+    color: var(--muted);
+    max-width: 42ch;
+    margin: 0 0 48px 0;
+}
+section.hero p.subhead strong {
+    color: var(--paper);
+    font-weight: 500;
+}
+section.hero .hero-ctas {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.btn-primary {
+    background: var(--accent);
+    color: var(--ink);
+    padding: 16px 28px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 15px;
+    border: 1px solid var(--accent);
+    transition: transform 120ms ease;
+    cursor: pointer;
+}
+.btn-primary:hover { transform: translateY(-1px); opacity: 1; }
+.btn-secondary {
+    background: transparent;
+    color: var(--paper);
+    padding: 16px 28px;
+    border-radius: 999px;
+    font-weight: 500;
+    font-size: 15px;
+    border: 1px solid var(--rule-soft);
+    transition: border-color 120ms ease;
+    cursor: pointer;
+}
+.btn-secondary:hover { border-color: var(--paper); opacity: 1; }
+
+section.hero .scroll-hint {
+    margin-top: 96px;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+section.hero .scroll-hint::after {
+    content: "↓";
+    display: inline-block;
+    margin-left: 8px;
+    animation: bob 2s ease-in-out infinite;
+}
+@keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(4px); }
+}
+
+/* ---------- problem strip ---------- */
+
+section.problem {
+    padding: 100px 0;
+    border-bottom: 1px solid var(--rule-soft);
+}
+section.problem h2 {
+    font-size: clamp(36px, 4vw, 56px);
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    font-weight: 700;
+    margin: 0 0 64px 0;
+    max-width: 22ch;
+}
+section.problem h2 em {
+    font-style: italic;
+    color: var(--muted);
+    font-weight: 500;
+}
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 48px;
+}
+.stat .stat-number {
+    font-size: clamp(40px, 5vw, 64px);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    margin-bottom: 16px;
+    color: var(--accent);
+}
+.stat .stat-label {
+    font-size: 16px;
+    color: var(--paper);
+    line-height: 1.4;
+    max-width: 28ch;
+    margin-bottom: 8px;
+}
+.stat .stat-source {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+}
+
+/* ---------- solution / features ---------- */
+
+section.solution {
+    padding: 120px 0;
+    border-bottom: 1px solid var(--rule-soft);
+}
+section.solution .eyebrow {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    margin-bottom: 32px;
+}
+section.solution h2 {
+    font-size: clamp(40px, 5vw, 72px);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    margin: 0 0 24px 0;
+    max-width: 16ch;
+}
+section.solution h2 em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent);
+}
+section.solution p.lead {
+    font-size: 20px;
+    color: var(--muted);
+    max-width: 56ch;
+    margin: 0 0 88px 0;
+    line-height: 1.5;
+}
+
+.feature {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 80px;
+    align-items: center;
+    padding: 64px 0;
+    border-top: 1px solid var(--rule-soft);
+}
+.feature:first-of-type { border-top: 0; padding-top: 32px; }
+.feature .feature-num {
+    font-size: 13px;
+    letter-spacing: 0.16em;
+    color: var(--accent);
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+.feature h3 {
+    font-size: clamp(28px, 3vw, 40px);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 0 0 20px 0;
+    font-weight: 700;
+}
+.feature p {
+    color: var(--muted);
+    font-size: 17px;
+    line-height: 1.6;
+    margin: 0 0 16px 0;
+    max-width: 44ch;
+}
+.feature ul {
+    list-style: none;
+    padding: 0;
+    margin: 24px 0 0 0;
+    color: var(--paper);
+}
+.feature ul li {
+    padding: 10px 0;
+    border-top: 1px solid var(--rule-soft);
+    font-size: 15px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+.feature ul li::before {
+    content: "✓";
+    color: var(--accent);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.feature .feature-visual {
+    background: #0f0f0f;
+    border: 1px solid var(--rule-soft);
+    border-radius: 8px;
+    padding: 24px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    overflow-x: auto;
+    color: var(--paper);
+}
+.feature .feature-visual .comment { color: var(--muted); }
+.feature .feature-visual .ok { color: var(--green); }
+.feature .feature-visual .bad { color: var(--red); }
+.feature .feature-visual .accent { color: var(--accent); }
+.feature .feature-visual .strong { color: var(--paper); font-weight: 600; }
+
+.feature.reverse {
+    grid-template-columns: 1.2fr 1fr;
+}
+.feature.reverse .feature-visual { order: -1; }
+
+/* ---------- demo embed ---------- */
+
+section.demo {
+    padding: 120px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    background: linear-gradient(180deg, #0a0a0a 0%, #050505 100%);
+}
+section.demo .eyebrow {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--accent);
+    margin-bottom: 24px;
+}
+section.demo h2 {
+    font-size: clamp(40px, 5vw, 72px);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    margin: 0 0 24px 0;
+    max-width: 14ch;
+}
+section.demo p.lead {
+    font-size: 19px;
+    color: var(--muted);
+    max-width: 56ch;
+    margin: 0 0 56px 0;
+}
+.demo-card {
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 12px;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.4);
+}
+.demo-card .demo-card-head {
+    padding: 18px 24px;
+    border-bottom: 1px solid #d8d8d8;
+    background: #fafaf8;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #555;
+}
+.demo-card .demo-card-head .dots {
+    display: flex;
+    gap: 7px;
+}
+.demo-card .demo-card-head .dots span {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #d4d4d4;
+}
+.demo-card .demo-card-head .dots span:first-child { background: #ff6058; }
+.demo-card .demo-card-head .dots span:nth-child(2) { background: #ffbd2e; }
+.demo-card .demo-card-head .dots span:nth-child(3) { background: #28ca42; }
+.demo-card .demo-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+.demo-card .demo-table th,
+.demo-card .demo-table td {
+    text-align: left;
+    padding: 14px 24px;
+    border-bottom: 1px solid #ececec;
+    font-variant-numeric: tabular-nums;
+}
+.demo-card .demo-table th {
+    background: #f4f2ee;
+    color: #888;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+.demo-card .demo-table td.col-time { color: #888; white-space: nowrap; }
+.demo-card .demo-table td.col-agents { white-space: nowrap; color: #555; }
+.demo-card .demo-table td.col-status { white-space: nowrap; width: 200px; }
+.demo-card .demo-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    border: 1px solid transparent;
+}
+.demo-card .demo-badge.green { color: #2f7a3a; border-color: #2f7a3a; background: #ecf5ee; }
+.demo-card .demo-badge.red   { color: #a02020; border-color: #a02020; background: #f6e6e6; }
+
+/* ---------- buyers ---------- */
+
+section.buyers {
+    padding: 120px 0;
+    border-bottom: 1px solid var(--rule-soft);
+}
+section.buyers .eyebrow {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    margin-bottom: 32px;
+}
+section.buyers h2 {
+    font-size: clamp(40px, 5vw, 72px);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    margin: 0 0 64px 0;
+    max-width: 18ch;
+}
+section.buyers h2 em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent);
+}
+.buyer-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+.buyer-card {
+    background: #111;
+    border: 1px solid var(--rule-soft);
+    border-radius: 12px;
+    padding: 36px 32px;
+    transition: border-color 200ms ease, transform 200ms ease;
+}
+.buyer-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-3px);
+}
+.buyer-card .persona-label {
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 24px;
+}
+.buyer-card .persona-label .num {
+    color: var(--accent);
+    margin-right: 8px;
+}
+.buyer-card h3 {
+    font-size: 24px;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    margin: 0 0 16px 0;
+    font-weight: 700;
+}
+.buyer-card p.persona-pain {
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.55;
+    margin: 0 0 24px 0;
+}
+.buyer-card .persona-outcome {
+    border-top: 1px solid var(--rule-soft);
+    padding-top: 20px;
+    margin-top: 24px;
+    font-size: 14px;
+    color: var(--paper);
+}
+.buyer-card .persona-outcome .label {
+    color: var(--accent);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 8px;
+}
+
+/* ---------- what-its-not ---------- */
+
+section.not {
+    padding: 120px 0;
+    border-bottom: 1px solid var(--rule-soft);
+}
+section.not h2 {
+    font-size: clamp(40px, 5vw, 72px);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    margin: 0 0 56px 0;
+    max-width: 18ch;
+}
+section.not h2 em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--muted);
+}
+.not-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px;
+    max-width: 920px;
+}
+.not-card {
+    padding: 28px 0;
+    border-top: 1px solid var(--rule-soft);
+}
+.not-card h4 {
+    font-size: 18px;
+    margin: 0 0 8px 0;
+    color: var(--paper);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+.not-card h4::before {
+    content: "✗";
+    color: var(--muted);
+    margin-right: 12px;
+    font-weight: 400;
+}
+.not-card p {
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.55;
+    margin: 0;
+    padding-left: 24px;
+}
+
+/* ---------- final cta ---------- */
+
+section.final {
+    padding: 140px 0;
+    text-align: center;
+}
+section.final h2 {
+    font-size: clamp(48px, 7vw, 96px);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    font-weight: 700;
+    margin: 0 0 24px 0;
+    max-width: 18ch;
+    margin-left: auto;
+    margin-right: auto;
+}
+section.final h2 em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent);
+}
+section.final p {
+    color: var(--muted);
+    font-size: 19px;
+    max-width: 44ch;
+    margin: 0 auto 48px auto;
+    line-height: 1.5;
+}
+
+/* ---------- footer ---------- */
+
+footer {
+    border-top: 1px solid var(--rule-soft);
+    padding: 64px 0 40px 0;
+    background: #050505;
+}
+footer .footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 48px;
+}
+footer .footer-brand h4 {
+    font-size: 18px;
+    margin: 0 0 8px 0;
+    letter-spacing: -0.01em;
+}
+footer .footer-brand h4 .dot { color: var(--accent); }
+footer .footer-brand p {
+    color: var(--muted);
+    font-size: 13px;
+    max-width: 28ch;
+    margin: 0;
+    line-height: 1.5;
+}
+footer .footer-col h5 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    margin: 0 0 16px 0;
+    font-weight: 600;
+}
+footer .footer-col a {
+    display: block;
+    font-size: 14px;
+    color: var(--paper);
+    padding: 4px 0;
+}
+footer .footer-col a:hover { color: var(--accent); opacity: 1; }
+footer .legal {
+    border-top: 1px solid var(--rule-soft);
+    padding-top: 28px;
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 900px) {
+    .container { padding: 0 24px; }
+    section.hero { padding: 80px 0 60px 0; }
+    header.nav nav.links { display: none; }
+    .stat-grid { grid-template-columns: 1fr; gap: 32px; }
+    .feature, .feature.reverse {
+        grid-template-columns: 1fr;
+        gap: 32px;
+        padding: 48px 0;
+    }
+    .feature.reverse .feature-visual { order: 0; }
+    .buyer-grid { grid-template-columns: 1fr; }
+    .not-grid { grid-template-columns: 1fr; }
+    footer .footer-grid { grid-template-columns: 1fr 1fr; }
+    footer .legal { flex-direction: column; gap: 12px; }
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+    <div class="container">
+        <div class="brand">AWP<span class="dot">.</span></div>
+        <nav class="links">
+            <a href="#how-it-works">How it works</a>
+            <a href="#buyers">Who it's for</a>
+            <a href="#demo">See it work</a>
+            <a href="https://github.com/inertialabsxyz/awp">GitHub</a>
+        </nav>
+        <a href="#final" class="cta-btn">Get a demo</a>
+    </div>
+</header>
+
+<section class="hero">
+    <div class="container">
+        <div class="eyebrow"><span class="dot"></span> Agent Work Protocol</div>
+        <h1>Cryptographic <em>receipts</em> for AI agents.</h1>
+        <p class="subhead">
+            A signed, verifiable record of every task your agents complete —
+            <strong>for audit, billing, and dispute resolution.</strong>
+        </p>
+        <div class="hero-ctas">
+            <a href="#final" class="btn-primary">Get a demo</a>
+            <a href="#how-it-works" class="btn-secondary">How it works ↓</a>
+        </div>
+        <div class="scroll-hint">Scroll</div>
+    </div>
+</section>
+
+<section class="problem">
+    <div class="container">
+        <h2>
+            Your AI agent just made a decision that affects a customer.
+            <em>Six months from now, can you prove what it did — and that nobody edited the record?</em>
+        </h2>
+        <div class="stat-grid">
+            <div class="stat">
+                <div class="stat-number">73%</div>
+                <div class="stat-label">of regulated firms cite "auditability of AI decisions" as a top-three procurement blocker.</div>
+                <div class="stat-source">SOURCE — INDUSTRY SURVEY, 2026</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">$2.4M</div>
+                <div class="stat-label">average remediation cost for a finding tied to inadequate model-use logging.</div>
+                <div class="stat-source">SOURCE — SR 11-7 PRACTITIONER DATA, 2025</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">0</div>
+                <div class="stat-label">portable, third-party-verifiable receipt formats existed in the agent stack — before AWP.</div>
+                <div class="stat-source">SOURCE — MARKET LANDSCAPE, MID-2026</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="solution" id="how-it-works">
+    <div class="container">
+        <div class="eyebrow">How it works</div>
+        <h2>Receipts that <em>can't be edited</em> after the fact.</h2>
+        <p class="lead">
+            Every agent decision is signed at the moment of execution, independently verified by a second
+            agent, and stored in a tamper-evident log. Anyone — your auditor, your customer, a counterparty —
+            can verify the receipt without trusting you.
+        </p>
+
+        <div class="feature">
+            <div class="feature-copy">
+                <div class="feature-num">01 · WORKER</div>
+                <h3>The agent signs every decision at the moment it makes it.</h3>
+                <p>
+                    Ed25519 signature binds the agent's identity, the task input, the output, and the
+                    timestamp into one cryptographic claim. Tamper with any field — the signature breaks.
+                </p>
+                <ul>
+                    <li>32-byte agent public key, identity stable across restarts</li>
+                    <li>SHA-256 hashes pin both input and output</li>
+                    <li>Signed payload is canonical JSON — replayable across languages</li>
+                </ul>
+            </div>
+            <div class="feature-visual">
+<span class="comment">// Worker produces a signed Attestation</span>
+{
+  <span class="strong">"agent_id"</span>:    <span class="accent">"agent-kyc-01"</span>,
+  <span class="strong">"agent_pubkey"</span>: <span class="accent">"a3f9b2c1…7d8e4f0a"</span>,
+  <span class="strong">"task_hash"</span>:   "1f8b2…",
+  <span class="strong">"output_hash"</span>: "9c4ae…",
+  <span class="strong">"output"</span>:      <span class="accent">"APPROVE"</span>,
+  <span class="strong">"status"</span>:      <span class="ok">"Completed"</span>,
+  <span class="strong">"timestamp"</span>:   1715456789,
+  <span class="strong">"signature"</span>:   "ed25519:8c92a4…b71f"
+}
+            </div>
+        </div>
+
+        <div class="feature reverse">
+            <div class="feature-copy">
+                <div class="feature-num">02 · VERIFIER</div>
+                <h3>A second agent independently checks the work.</h3>
+                <p>
+                    The Verifier re-runs the task, validates the Worker's signature, and signs its own
+                    attestation recording its verdict. Disagreement is preserved as data, not hidden.
+                </p>
+                <ul>
+                    <li>Two independent verdicts: signature valid, answer correct</li>
+                    <li>Disagreement detection across N parallel verifiers</li>
+                    <li>Verifier's attestation references the Worker's by id — cryptographic chain of trust</li>
+                </ul>
+            </div>
+            <div class="feature-visual">
+<span class="comment">// Verifier's signed verdict</span>
+{
+  <span class="strong">"agent_id"</span>: <span class="accent">"agent-kyc-02"</span>,
+  <span class="strong">"references"</span>: <span class="accent">"7a3c…"</span>,
+  <span class="strong">"status"</span>: {
+    <span class="strong">"Verified"</span>: {
+      <span class="strong">"attestation_valid"</span>: <span class="ok">true</span>,
+      <span class="strong">"answer_correct"</span>:   <span class="ok">true</span>
+    }
+  },
+  <span class="comment">// or — when caught:</span>
+  <span class="strong">"status"</span>: {
+    <span class="strong">"Verified"</span>: {
+      <span class="strong">"attestation_valid"</span>: <span class="bad">false</span>,
+      <span class="strong">"answer_correct"</span>:   <span class="bad">false</span>
+    }
+  }
+}
+            </div>
+        </div>
+
+        <div class="feature">
+            <div class="feature-copy">
+                <div class="feature-num">03 · AUDIT</div>
+                <h3>Open the viewer. Hand your auditor a working laptop.</h3>
+                <p>
+                    A static HTML viewer renders receipts as a chronological timeline and re-verifies every
+                    signature in the browser. No server. No network call. No trust required.
+                </p>
+                <ul>
+                    <li>Drag in JSONL files — receipts render in seconds</li>
+                    <li>Vendored ed25519 verifies signatures client-side</li>
+                    <li>Tampered receipts flip red on reload — by design</li>
+                </ul>
+            </div>
+            <div class="feature-visual">
+<span class="comment">// In-browser verification result</span>
+
+✓ self-test: signing-payload bytes
+  match Rust canonical encoding
+
+ROW 1 — <span class="ok">APPROVE</span> &nbsp; <span class="ok">✓ signature verified</span>
+ROW 2 — <span class="ok">FLAG</span>    &nbsp; <span class="ok">✓ signature verified</span>
+ROW 3 — <span class="bad">FLAG</span>    &nbsp; <span class="bad">✗ signature invalid</span>
+
+<span class="comment">"receipt has been altered or the
+ key does not match"</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="demo" id="demo">
+    <div class="container">
+        <div class="eyebrow">See it work</div>
+        <h2>Three receipts. <em>One has been tampered with.</em></h2>
+        <p class="lead">
+            Below is what your compliance lead sees when they open the audit viewer.
+            The third row's signature does not match — and AWP catches it. If application
+            logs were the only record, that edit would be invisible.
+        </p>
+        <div class="demo-card">
+            <div class="demo-card-head">
+                <div class="dots"><span></span><span></span><span></span></div>
+                <div>AWP Audit Viewer · localhost</div>
+                <div>3 receipts loaded</div>
+            </div>
+            <table class="demo-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Agents (worker → verifier)</th>
+                        <th>Decision</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="col-time">2026-05-11 14:32 UTC</td>
+                        <td class="col-agents">agent-kyc-01 → agent-kyc-02</td>
+                        <td>Customer #4711 — APPROVE</td>
+                        <td class="col-status"><span class="demo-badge green">🟢 Verified</span></td>
+                    </tr>
+                    <tr>
+                        <td class="col-time">2026-05-11 14:32 UTC</td>
+                        <td class="col-agents">agent-kyc-01 → agent-kyc-02</td>
+                        <td>Customer #8842 — FLAG</td>
+                        <td class="col-status"><span class="demo-badge green">🟢 Verified</span></td>
+                    </tr>
+                    <tr>
+                        <td class="col-time">2026-05-11 14:32 UTC</td>
+                        <td class="col-agents">agent-kyc-01 → agent-kyc-02</td>
+                        <td>Customer #9999 — FLAG</td>
+                        <td class="col-status"><span class="demo-badge red">🔴 Signature invalid</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<section class="buyers" id="buyers">
+    <div class="container">
+        <div class="eyebrow">Who it's for</div>
+        <h2>Three buyers. <em>Three pay-fors.</em></h2>
+        <div class="buyer-grid">
+            <div class="buyer-card">
+                <div class="persona-label"><span class="num">01</span> Compliance lead</div>
+                <h3>Pass the audit on the first attempt.</h3>
+                <p class="persona-pain">
+                    Your examiner asks <em>"show me what the agent did, and prove it wasn't edited."</em>
+                    Application logs are circumstantial. AWP attestations are evidence.
+                </p>
+                <div class="persona-outcome">
+                    <span class="label">Pay-for</span>
+                    The six-figure remediation cost of the finding that doesn't happen.
+                </div>
+            </div>
+            <div class="buyer-card">
+                <div class="persona-label"><span class="num">02</span> Platform operator</div>
+                <h3>Settle disputes in your favour.</h3>
+                <p class="persona-pain">
+                    A buyer disputes a $500 agent task. You can refund (lose revenue) or hold the line
+                    (lose the buyer). With AWP, the receipt is the evidence.
+                </p>
+                <div class="persona-outcome">
+                    <span class="label">Pay-for</span>
+                    A percentage of disputed revenue that previously evaporated.
+                </div>
+            </div>
+            <div class="buyer-card">
+                <div class="persona-label"><span class="num">03</span> Cross-party counterparty</div>
+                <h3>Move past "we don't trust your logs."</h3>
+                <p class="persona-pain">
+                    Their procurement team wants proof of what your agent did, signed by the agent —
+                    not by your platform. AWP is signed at the source.
+                </p>
+                <div class="persona-outcome">
+                    <span class="label">Pay-for</span>
+                    The deals that previously stalled at vendor risk review.
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="not">
+    <div class="container">
+        <h2>What AWP <em>is not</em>.</h2>
+        <div class="not-grid">
+            <div class="not-card">
+                <h4>Not a replacement for observability.</h4>
+                <p>Datadog, LangSmith, Helicone tell you what happened on your infrastructure. AWP tells you what the agent claimed and proves it. Complementary.</p>
+            </div>
+            <div class="not-card">
+                <h4>Not a judgement on correctness.</h4>
+                <p>AWP attests to what was claimed, not to whether the claim is right under your business rules. Model validation is your job; AWP makes the claims auditable.</p>
+            </div>
+            <div class="not-card">
+                <h4>Not on-chain AI.</h4>
+                <p>Optional Merkle root anchoring exists for cross-party networks. Most buyers will never anchor anything on a chain — the protocol works without one.</p>
+            </div>
+            <div class="not-card">
+                <h4>Not a token, not a DAO.</h4>
+                <p>No tokenomics. No governance theatre. No "stake to verify." Just signatures, hashes, and an audit trail your auditor recognises.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="final" id="final">
+    <div class="container">
+        <h2>Receipts your auditor <em>will accept.</em></h2>
+        <p>
+            See the prototype run end-to-end in three minutes. Bring a compliance lead.
+        </p>
+        <div class="hero-ctas" style="justify-content: center;">
+            <a href="mailto:hello@inertialabs.xyz?subject=AWP%20demo" class="btn-primary">Get a demo</a>
+            <a href="https://github.com/inertialabsxyz/awp" class="btn-secondary">Read the code</a>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="container">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <h4>AWP<span class="dot">.</span></h4>
+                <p>Cryptographic receipts for AI agents. Built by Inertia Labs.</p>
+            </div>
+            <div class="footer-col">
+                <h5>Product</h5>
+                <a href="#how-it-works">How it works</a>
+                <a href="#buyers">Who it's for</a>
+                <a href="#demo">See it work</a>
+            </div>
+            <div class="footer-col">
+                <h5>Resources</h5>
+                <a href="https://github.com/inertialabsxyz/awp">GitHub</a>
+                <a href="https://github.com/inertialabsxyz/awp/blob/main/docs/ARCHITECTURE.md">Architecture</a>
+                <a href="https://github.com/inertialabsxyz/awp/blob/main/docs/compliance/SR_11_7.md">SR 11-7 mapping</a>
+            </div>
+            <div class="footer-col">
+                <h5>Company</h5>
+                <a href="https://inertialabs.xyz">Inertia Labs</a>
+                <a href="mailto:hello@inertialabs.xyz">Contact</a>
+            </div>
+        </div>
+        <div class="legal">
+            <div>© 2026 Inertia Labs</div>
+            <div>Pre-implementation prototype · Not production-ready</div>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>
