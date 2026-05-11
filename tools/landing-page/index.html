@@ -430,6 +430,94 @@ section.demo p.lead {
 .demo-card .demo-badge.green { color: #2f7a3a; border-color: #2f7a3a; background: #ecf5ee; }
 .demo-card .demo-badge.red   { color: #a02020; border-color: #a02020; background: #f6e6e6; }
 
+/* ---------- install ---------- */
+
+section.install {
+    padding: 120px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    background: #050505;
+}
+section.install .eyebrow {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--accent);
+    margin-bottom: 24px;
+}
+section.install h2 {
+    font-size: clamp(40px, 5vw, 72px);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    margin: 0 0 24px 0;
+    max-width: 18ch;
+}
+section.install h2 em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent);
+}
+section.install p.lead {
+    font-size: 19px;
+    color: var(--muted);
+    max-width: 56ch;
+    margin: 0 0 48px 0;
+}
+.install-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 56px;
+    align-items: center;
+}
+.install-code {
+    background: #0f0f0f;
+    border: 1px solid var(--rule-soft);
+    border-radius: 8px;
+    padding: 28px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    overflow-x: auto;
+    color: var(--paper);
+}
+.install-code .prompt { color: var(--muted); }
+.install-code .comment { color: var(--muted); }
+.install-code .kw { color: var(--accent); }
+.install-code .str { color: var(--green); }
+.install-code .strong { color: var(--paper); font-weight: 600; }
+.install-points {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.install-points li {
+    padding: 14px 0;
+    border-top: 1px solid var(--rule-soft);
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--paper);
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+.install-points li:first-child { border-top: 0; }
+.install-points li::before {
+    content: "✓";
+    color: var(--accent);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.install-points li strong {
+    color: var(--paper);
+    font-weight: 600;
+}
+.install-points li span {
+    color: var(--muted);
+    display: block;
+    margin-top: 4px;
+    font-size: 14px;
+}
+
 /* ---------- buyers ---------- */
 
 section.buyers {
@@ -511,6 +599,151 @@ section.buyers h2 em {
     display: block;
     margin-bottom: 8px;
 }
+
+/* ---------- pricing ---------- */
+
+section.pricing {
+    padding: 120px 0;
+    border-bottom: 1px solid var(--rule-soft);
+}
+section.pricing .eyebrow {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    margin-bottom: 32px;
+}
+section.pricing h2 {
+    font-size: clamp(40px, 5vw, 72px);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    margin: 0 0 24px 0;
+    max-width: 20ch;
+}
+section.pricing h2 em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent);
+}
+section.pricing p.lead {
+    font-size: 19px;
+    color: var(--muted);
+    max-width: 56ch;
+    margin: 0 0 64px 0;
+}
+.price-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+.price-card {
+    background: #111;
+    border: 1px solid var(--rule-soft);
+    border-radius: 12px;
+    padding: 36px 32px;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 200ms ease, transform 200ms ease;
+}
+.price-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-3px);
+}
+.price-card.featured {
+    border-color: var(--accent);
+}
+.price-card .tier-label {
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+}
+.price-card.featured .tier-label {
+    color: var(--accent);
+}
+.price-card .tier-name {
+    font-size: 28px;
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    margin: 0 0 12px 0;
+    font-weight: 700;
+}
+.price-card .tier-price {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.025em;
+    margin: 0 0 8px 0;
+}
+.price-card .tier-price .unit {
+    font-size: 15px;
+    color: var(--muted);
+    font-weight: 400;
+    letter-spacing: 0;
+    margin-left: 6px;
+}
+.price-card .tier-strap {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0 0 24px 0;
+}
+.price-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 28px 0;
+    flex: 1;
+}
+.price-card ul li {
+    padding: 10px 0;
+    border-top: 1px solid var(--rule-soft);
+    font-size: 14px;
+    color: var(--paper);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    line-height: 1.5;
+}
+.price-card ul li::before {
+    content: "✓";
+    color: var(--accent);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.price-card .tier-cta {
+    display: inline-block;
+    text-align: center;
+    padding: 14px 24px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 14px;
+    border: 1px solid var(--rule-soft);
+    color: var(--paper);
+    transition: border-color 120ms ease;
+}
+.price-card .tier-cta:hover {
+    border-color: var(--paper);
+    opacity: 1;
+}
+.price-card.featured .tier-cta {
+    background: var(--accent);
+    color: var(--ink);
+    border-color: var(--accent);
+}
+.price-card.featured .tier-cta:hover {
+    opacity: 1;
+    transform: translateY(-1px);
+}
+.pricing-footnote {
+    margin-top: 48px;
+    font-size: 14px;
+    color: var(--muted);
+    max-width: 64ch;
+    line-height: 1.6;
+}
+.pricing-footnote strong { color: var(--paper); font-weight: 500; }
 
 /* ---------- what-its-not ---------- */
 
@@ -655,6 +888,8 @@ footer .legal {
         padding: 48px 0;
     }
     .feature.reverse .feature-visual { order: 0; }
+    .install-grid { grid-template-columns: 1fr; gap: 32px; }
+    .price-grid { grid-template-columns: 1fr; }
     .buyer-grid { grid-template-columns: 1fr; }
     .not-grid { grid-template-columns: 1fr; }
     footer .footer-grid { grid-template-columns: 1fr 1fr; }
@@ -669,8 +904,9 @@ footer .legal {
         <div class="brand">AWP<span class="dot">.</span></div>
         <nav class="links">
             <a href="#how-it-works">How it works</a>
+            <a href="#install">Install</a>
             <a href="#buyers">Who it's for</a>
-            <a href="#demo">See it work</a>
+            <a href="#pricing">Pricing</a>
             <a href="https://github.com/inertialabsxyz/awp">GitHub</a>
         </nav>
         <a href="#final" class="cta-btn">Get a demo</a>
@@ -686,8 +922,8 @@ footer .legal {
             <strong>for audit, billing, and dispute resolution.</strong>
         </p>
         <div class="hero-ctas">
-            <a href="#final" class="btn-primary">Get a demo</a>
-            <a href="#how-it-works" class="btn-secondary">How it works ↓</a>
+            <a href="#install" class="btn-primary">Try it on your LangGraph agent</a>
+            <a href="#final" class="btn-secondary">Talk to us about a pilot</a>
         </div>
         <div class="scroll-hint">Scroll</div>
     </div>
@@ -874,6 +1110,60 @@ ROW 3 — <span class="bad">FLAG</span>    &nbsp; <span class="bad">✗ signatur
     </div>
 </section>
 
+<section class="install" id="install">
+    <div class="container">
+        <div class="eyebrow">Install</div>
+        <h2>One line. <em>Your LangGraph agent now signs every node.</em></h2>
+        <p class="lead">
+            Wrap any <code>StateGraph</code> with <code>awp.langgraph.attest</code>. Every node execution
+            emits a signed receipt to a local file or a configurable sink. No model changes, no orchestration
+            changes — just attestations flowing alongside the work.
+        </p>
+        <div class="install-grid">
+            <div class="install-code">
+<span class="prompt">$</span> pip install awp-langgraph
+
+<span class="comment"># in your agent file</span>
+<span class="kw">from</span> awp.langgraph <span class="kw">import</span> attest
+<span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph
+
+graph = build_my_kyc_graph()
+graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"kyc-worker-01"</span>)
+
+<span class="comment"># every node now emits a signed attestation.</span>
+<span class="comment"># defaults to ./data/attestations.jsonl —</span>
+<span class="comment"># swap in CloudSink(api_key=...) when you're ready.</span>
+            </div>
+            <ul class="install-points">
+                <li>
+                    <div>
+                        <strong>Zero refactor.</strong>
+                        <span>Your graph keeps the same nodes, the same routing, the same model calls. Attestation is a callback, not a rewrite.</span>
+                    </div>
+                </li>
+                <li>
+                    <div>
+                        <strong>Local-first by default.</strong>
+                        <span>FileSink writes JSONL to disk. You can use AWP forever without a server, an account, or a network call.</span>
+                    </div>
+                </li>
+                <li>
+                    <div>
+                        <strong>Switch sinks when you're ready.</strong>
+                        <span>Same receipts, different destination — local file, AWP Cloud, your own S3, or a custom callable.</span>
+                    </div>
+                </li>
+                <li>
+                    <div>
+                        <strong>Worker–Verifier on demand.</strong>
+                        <span>Pass <code>verifier_agent_id=</code> to run the graph twice with independent identities and produce a signed verdict.</span>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</section>
+
 <section class="buyers" id="buyers">
     <div class="container">
         <div class="eyebrow">Who it's for</div>
@@ -919,6 +1209,70 @@ ROW 3 — <span class="bad">FLAG</span>    &nbsp; <span class="bad">✗ signatur
     </div>
 </section>
 
+<section class="pricing" id="pricing">
+    <div class="container">
+        <div class="eyebrow">Pricing</div>
+        <h2>Two ways to run AWP. <em>Switch directions any time.</em></h2>
+        <p class="lead">
+            The SDK is open source and works offline forever. AWP Cloud is for teams who'd rather not run
+            their own retention, sharing, and compliance infrastructure. Same signed receipts. Same
+            verification. You own the keys either way.
+        </p>
+        <div class="price-grid">
+            <div class="price-card">
+                <div class="tier-label">Open source</div>
+                <h3 class="tier-name">Self-hosted</h3>
+                <div class="tier-price">$0<span class="unit">/ forever</span></div>
+                <p class="tier-strap">Run AWP entirely on your own infrastructure. No account, no telemetry, no dependency on us.</p>
+                <ul>
+                    <li>LangGraph SDK (Python, MIT)</li>
+                    <li>FileSink → local JSONL</li>
+                    <li>Static audit viewer (offline)</li>
+                    <li>Persistent agent identities</li>
+                    <li>Worker–Verifier protocol</li>
+                    <li>Community support</li>
+                </ul>
+                <a href="https://github.com/inertialabsxyz/awp" class="tier-cta">Read the code</a>
+            </div>
+            <div class="price-card featured">
+                <div class="tier-label">Most teams start here</div>
+                <h3 class="tier-name">Team</h3>
+                <div class="tier-price">$499<span class="unit">/ month</span></div>
+                <p class="tier-strap">Hosted retention and sharing for teams running agents in production. Self-serve, Stripe checkout, cancel any time.</p>
+                <ul>
+                    <li>1M attestations / month</li>
+                    <li>1-year retention</li>
+                    <li>Hosted viewer + share-links</li>
+                    <li>Search by agent, customer, time</li>
+                    <li>API key access from CloudSink</li>
+                    <li>Email support, &lt; 24h response</li>
+                </ul>
+                <a href="#final" class="tier-cta">Start a trial</a>
+            </div>
+            <div class="price-card">
+                <div class="tier-label">Regulated buyers</div>
+                <h3 class="tier-name">Enterprise</h3>
+                <div class="tier-price">Talk to us</div>
+                <p class="tier-strap">For audit, SOC 2, SR 11-7, EU AI Act, HIPAA. Designed to survive procurement review at a mid-market regulated buyer.</p>
+                <ul>
+                    <li>Unlimited attestations</li>
+                    <li>7-year tamper-evident retention</li>
+                    <li>SSO, audit log of the audit log</li>
+                    <li>SOC 2 Type II report</li>
+                    <li>Compliance report templates</li>
+                    <li>Dedicated SE, MSA &amp; DPA, SLA</li>
+                </ul>
+                <a href="#final" class="tier-cta">Get a quote</a>
+            </div>
+        </div>
+        <p class="pricing-footnote">
+            <strong>Free to start. Free to leave.</strong> The SDK is open source. The viewer is a static
+            HTML file. If you stop paying us, your existing receipts keep verifying forever — because the
+            signatures don't depend on us. Export everything you've ever stored as JSONL with one API call.
+        </p>
+    </div>
+</section>
+
 <section class="not">
     <div class="container">
         <h2>What AWP <em>is not</em>.</h2>
@@ -936,8 +1290,8 @@ ROW 3 — <span class="bad">FLAG</span>    &nbsp; <span class="bad">✗ signatur
                 <p>Optional Merkle root anchoring exists for cross-party networks. Most buyers will never anchor anything on a chain — the protocol works without one.</p>
             </div>
             <div class="not-card">
-                <h4>Not a token, not a DAO.</h4>
-                <p>No tokenomics. No governance theatre. No "stake to verify." Just signatures, hashes, and an audit trail your auditor recognises.</p>
+                <h4>Not yet on every framework.</h4>
+                <p>v0.1 ships with LangGraph (Python). CrewAI, AutoGen, and Mastra are next. MCP server middleware lands after that. The Rust core is the reference implementation; every SDK is a binding to it.</p>
             </div>
         </div>
     </div>
@@ -947,11 +1301,12 @@ ROW 3 — <span class="bad">FLAG</span>    &nbsp; <span class="bad">✗ signatur
     <div class="container">
         <h2>Receipts your auditor <em>will accept.</em></h2>
         <p>
-            See the prototype run end-to-end in three minutes. Bring a compliance lead.
+            Install the SDK and produce your first signed receipt in five minutes — or book a pilot
+            conversation and bring your compliance lead.
         </p>
         <div class="hero-ctas" style="justify-content: center;">
-            <a href="mailto:hello@inertialabs.xyz?subject=AWP%20demo" class="btn-primary">Get a demo</a>
-            <a href="https://github.com/inertialabsxyz/awp" class="btn-secondary">Read the code</a>
+            <a href="#install" class="btn-primary">Try it on your LangGraph agent</a>
+            <a href="mailto:hello@inertialabs.xyz?subject=AWP%20pilot" class="btn-secondary">Talk to us about a pilot</a>
         </div>
     </div>
 </section>
@@ -966,14 +1321,16 @@ ROW 3 — <span class="bad">FLAG</span>    &nbsp; <span class="bad">✗ signatur
             <div class="footer-col">
                 <h5>Product</h5>
                 <a href="#how-it-works">How it works</a>
-                <a href="#buyers">Who it's for</a>
+                <a href="#install">Install (LangGraph)</a>
                 <a href="#demo">See it work</a>
+                <a href="#pricing">Pricing</a>
             </div>
             <div class="footer-col">
                 <h5>Resources</h5>
                 <a href="https://github.com/inertialabsxyz/awp">GitHub</a>
                 <a href="https://github.com/inertialabsxyz/awp/blob/main/docs/ARCHITECTURE.md">Architecture</a>
                 <a href="https://github.com/inertialabsxyz/awp/blob/main/docs/compliance/SR_11_7.md">SR 11-7 mapping</a>
+                <a href="https://pypi.org/project/awp-langgraph/">awp-langgraph on PyPI</a>
             </div>
             <div class="footer-col">
                 <h5>Company</h5>
