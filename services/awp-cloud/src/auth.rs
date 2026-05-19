@@ -55,6 +55,13 @@ pub fn verify_api_key(cleartext: &str, phc: &str) -> bool {
         .is_ok()
 }
 
+/// Argon2id hash a cleartext signup password. Same algorithm and parameters
+/// as [`hash_api_key`]; the two are kept as separate helpers only for call-
+/// site clarity.
+pub fn hash_password(cleartext: &str) -> Result<String, ApiError> {
+    hash_api_key(cleartext)
+}
+
 /// Resolve an `x-api-key` header against the database, returning the owning
 /// `Account` on success. `None` on missing header or no match (handlers
 /// distinguish these only insofar as "missing header" returns 401 with

@@ -6,4 +6,6 @@ pub mod attestations;
 pub mod billing;
 pub mod export;
 pub mod health;
+pub mod quickstart;
 pub mod share_links;
+pub mod telemetry;

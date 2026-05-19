@@ -21,7 +21,7 @@ use uuid::Uuid;
 use crate::error::ApiError;
 use crate::store::{
     Account, ApiKeyRecord, AttestationIndex, DailyUsage, Db, IngestOutcome, Plan, SearchFilters,
-    SearchPage, ShareLink,
+    SearchPage, ShareLink, TelemetryEvent,
 };
 
 pub struct PgDb {
@@ -76,6 +76,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "0003_billing.sql",
         include_str!("../../migrations/0003_billing.sql"),
     ),
+    (
+        "0004_quickstart_telemetry.sql",
+        include_str!("../../migrations/0004_quickstart_telemetry.sql"),
+    ),
 ];
 
 fn map_err(e: sqlx::Error) -> ApiError {
@@ -92,7 +96,21 @@ fn row_to_account(row: sqlx::postgres::PgRow) -> Result<Account, ApiError> {
         stripe_subscription_id: row.try_get("stripe_subscription_id").map_err(map_err)?,
         retention_days: row.try_get("retention_days").map_err(map_err)?,
         billed_through: row.try_get("billed_through").map_err(map_err)?,
+        password_hash: row.try_get("password_hash").map_err(map_err)?,
         created_at: row.try_get("created_at").map_err(map_err)?,
+    })
+}
+
+fn row_to_telemetry(row: sqlx::postgres::PgRow) -> Result<TelemetryEvent, ApiError> {
+    Ok(TelemetryEvent {
+        install_id: row.try_get("install_id").map_err(map_err)?,
+        day: row.try_get("day").map_err(map_err)?,
+        sdk_version: row.try_get("sdk_version").map_err(map_err)?,
+        sink_type: row.try_get("sink_type").map_err(map_err)?,
+        python_version: row.try_get("python_version").map_err(map_err)?,
+        os: row.try_get("os").map_err(map_err)?,
+        attestations_emitted_today: row.try_get("attestations_emitted_today").map_err(map_err)?,
+        last_seen_at: row.try_get("last_seen_at").map_err(map_err)?,
     })
 }
 
@@ -154,6 +172,40 @@ impl Db for PgDb {
         .await
         .map_err(map_err)?;
         row_to_account(row)
+    }
+
+    async fn create_account_with_password(
+        &self,
+        email: &str,
+        password_hash: &str,
+        plan: Plan,
+    ) -> Result<Account, ApiError> {
+        let row = sqlx::query(
+            "INSERT INTO accounts \
+             (id, email, plan, retention_days, password_hash, created_at) \
+             VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *",
+        )
+        .bind(Uuid::new_v4())
+        .bind(email)
+        .bind(plan.as_slug())
+        .bind(plan.retention_days())
+        .bind(password_hash)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(map_err)?;
+        row_to_account(row)
+    }
+
+    async fn find_account_by_email(&self, email: &str) -> Result<Option<Account>, ApiError> {
+        let row = sqlx::query("SELECT * FROM accounts WHERE email = $1")
+            .bind(email)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(map_err)?;
+        match row {
+            Some(r) => Ok(Some(row_to_account(r)?)),
+            None => Ok(None),
+        }
     }
 
     async fn upsert_account_by_email(
@@ -656,5 +708,57 @@ impl Db for PgDb {
         .map_err(map_err)?;
         let total: i64 = row.try_get("total").map_err(map_err)?;
         Ok(total)
+    }
+
+    async fn upsert_telemetry_event(&self, event: TelemetryEvent) -> Result<(), ApiError> {
+        sqlx::query(
+            "INSERT INTO telemetry_events \
+             (install_id, day, sdk_version, sink_type, python_version, os, \
+              attestations_emitted_today, last_seen_at) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) \
+             ON CONFLICT (install_id, day) DO UPDATE SET \
+                sdk_version = EXCLUDED.sdk_version, \
+                sink_type = EXCLUDED.sink_type, \
+                python_version = EXCLUDED.python_version, \
+                os = EXCLUDED.os, \
+                attestations_emitted_today = EXCLUDED.attestations_emitted_today, \
+                last_seen_at = EXCLUDED.last_seen_at",
+        )
+        .bind(event.install_id)
+        .bind(event.day)
+        .bind(&event.sdk_version)
+        .bind(&event.sink_type)
+        .bind(&event.python_version)
+        .bind(&event.os)
+        .bind(event.attestations_emitted_today)
+        .bind(event.last_seen_at)
+        .execute(&self.pool)
+        .await
+        .map_err(map_err)?;
+        Ok(())
+    }
+
+    async fn top_telemetry_volumes(
+        &self,
+        from: NaiveDate,
+        min_attestations: i64,
+        limit: usize,
+    ) -> Result<Vec<TelemetryEvent>, ApiError> {
+        let rows = sqlx::query(
+            "SELECT * FROM telemetry_events \
+             WHERE day >= $1 AND attestations_emitted_today >= $2 AND sink_type = 'FileSink' \
+             ORDER BY attestations_emitted_today DESC, day DESC LIMIT $3",
+        )
+        .bind(from)
+        .bind(min_attestations)
+        .bind(limit as i64)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(map_err)?;
+        let mut out = Vec::with_capacity(rows.len());
+        for r in rows {
+            out.push(row_to_telemetry(r)?);
+        }
+        Ok(out)
     }
 }

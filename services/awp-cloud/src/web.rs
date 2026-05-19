@@ -274,6 +274,226 @@ if (params.get('welcome') === '1' && !getKey()) {
 </html>"##.to_string()
 }
 
+/// Server-rendered quickstart page. Walks a new user through:
+///
+///   1. Sign up with email + password (POSTs `/v1/account/signup`)
+///   2. Display `pip install awp-langgraph` and the freshly-minted API key
+///   3. Copy a 5-line snippet wrapping a tiny LangGraph example
+///   4. Live-poll `/v1/account/usage` until the first attestation lands,
+///      then redirect to the dashboard
+///
+/// `base_url` is the public origin used to compose absolute dashboard links
+/// in the final-step banner; on a local dev box it's `http://localhost:8080`.
+pub fn quickstart_html(base_url: &str) -> String {
+    let safe_base = base_url.replace('"', "&quot;");
+    format!(
+        r##"<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AWP Cloud — Quickstart</title>
+<link rel="stylesheet" href="/static/viewer.css">
+<style>
+  body {{ max-width: 880px; margin: 0 auto; padding: 32px; }}
+  .step {{ border: 1px solid #2a2a2a; border-radius: 8px; padding: 24px; margin: 18px 0;
+           opacity: 0.55; transition: opacity 180ms ease, border-color 180ms ease; }}
+  .step.active {{ opacity: 1; border-color: #d9ff3d; }}
+  .step.done   {{ opacity: 1; border-color: #2f7a3a; }}
+  .step h2 {{ margin: 0 0 12px 0; font-size: 18px; letter-spacing: -0.005em; }}
+  .step h2 .num {{ color: #d9ff3d; margin-right: 10px; }}
+  .step.done h2 .num {{ color: #2f7a3a; }}
+  .step.done h2 .num::after {{ content: " ✓"; }}
+  .form-row {{ display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }}
+  .form-row input {{ flex: 1 0 220px; padding: 10px 12px; background: #0a0a0a; color: #f5f3ef;
+                     border: 1px solid #2a2a2a; border-radius: 4px; font-size: 14px; }}
+  pre, code.block {{ display: block; background: #0a0a0a; color: #f5f3ef; padding: 14px 16px;
+                     border-radius: 4px; font-family: ui-monospace, "SF Mono", Menlo, monospace;
+                     font-size: 13px; white-space: pre-wrap; word-break: break-all;
+                     border: 1px solid #2a2a2a; }}
+  .btn {{ background: #d9ff3d; color: #0a0a0a; padding: 10px 16px; border-radius: 999px;
+          border: none; cursor: pointer; font-weight: 600; font-size: 14px; }}
+  .btn.secondary {{ background: transparent; color: inherit; border: 1px solid #2a2a2a; }}
+  .copy-row {{ display: flex; gap: 10px; align-items: stretch; }}
+  .copy-row pre {{ flex: 1; margin: 0; }}
+  .danger {{ color: #ff6b6b; min-height: 20px; }}
+  .ok {{ color: #8aff8a; }}
+  .pulse {{ display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+            background: #d9ff3d; margin-right: 8px;
+            animation: pulse 1.4s ease-in-out infinite; }}
+  @keyframes pulse {{ 0%, 100% {{ opacity: 0.35 }} 50% {{ opacity: 1 }} }}
+</style>
+</head>
+<body>
+<header>
+  <h1>Quickstart — your first signed receipt in 60 seconds</h1>
+  <p class="lede">Sign up, install the SDK, paste five lines, watch the first
+  attestation land in your dashboard. No cloud-side magic — every receipt is
+  signed locally in your process and POSTed here for retention and sharing.</p>
+</header>
+
+<main>
+
+  <section id="step-signup" class="step active">
+    <h2><span class="num">1</span>Create your account</h2>
+    <div class="form-row">
+      <input id="signup-email" type="email" autocomplete="email" placeholder="you@company.com">
+      <input id="signup-password" type="password" autocomplete="new-password" placeholder="password (8+ chars)">
+      <button class="btn" id="signup-btn" onclick="signup()">Sign up</button>
+    </div>
+    <p class="danger" id="signup-error" role="alert"></p>
+    <p style="color:#8a8680; font-size:13px; margin:8px 0 0 0;">Free Team-tier trial — 1M attestations / month, no credit card.</p>
+  </section>
+
+  <section id="step-key" class="step">
+    <h2><span class="num">2</span>Install the SDK and grab your API key</h2>
+    <div class="copy-row">
+      <pre id="pip-snippet">pip install awp-langgraph</pre>
+      <button class="btn secondary" onclick="copyText('pip-snippet', this)">Copy</button>
+    </div>
+    <p style="color:#8a8680; font-size:13px; margin:14px 0 6px 0;">Your API key (shown once — paste it into your secrets manager):</p>
+    <div class="copy-row">
+      <pre id="api-key-display">—</pre>
+      <button class="btn secondary" onclick="copyText('api-key-display', this)">Copy</button>
+    </div>
+  </section>
+
+  <section id="step-snippet" class="step">
+    <h2><span class="num">3</span>Paste five lines into your agent</h2>
+    <div class="copy-row">
+      <pre id="snippet">import os
+from awp.langgraph import attest, CloudSink
+from langgraph.graph import StateGraph
+
+graph = build_my_graph()
+graph = attest(graph, agent_id="quickstart-agent",
+               sink=CloudSink(api_key=os.environ["AWP_API_KEY"]))
+graph.invoke({{"hello": "world"}})</pre>
+      <button class="btn secondary" onclick="copyText('snippet', this)">Copy</button>
+    </div>
+    <p style="color:#8a8680; font-size:13px; margin:12px 0 0 0;">
+      Set <code>AWP_API_KEY</code> in your environment to the key above before
+      running. No graph yet? <code>build_my_graph()</code> is whatever
+      <code>StateGraph</code> you've already got — see the
+      <a href="/docs/quickstart" style="color:#d9ff3d">docs</a> for a runnable
+      KYC example.
+    </p>
+  </section>
+
+  <section id="step-attestation" class="step">
+    <h2><span class="num">4</span>Watch for your first attestation</h2>
+    <p id="poll-status"><span class="pulse"></span>Waiting for the first signed receipt to land…</p>
+    <p style="color:#8a8680; font-size:13px;">This page polls <code>/v1/account/usage</code>
+    once every two seconds. Run the snippet above and the counter will tick.
+    First attestation usually lands within a couple of seconds.</p>
+    <p><a class="btn secondary" id="dashboard-link" href="{safe_base}/dashboard?welcome=1">Open dashboard</a></p>
+  </section>
+
+</main>
+
+<script>
+const BASE = {base_url_js};
+const KEY_STORAGE = 'awp-cloud-api-key';
+
+function setActive(id) {{
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}}
+function setDone(id) {{
+  document.getElementById(id).classList.remove('active');
+  document.getElementById(id).classList.add('done');
+}}
+
+async function signup() {{
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  const err = document.getElementById('signup-error');
+  err.textContent = '';
+  if (!email || !password) {{ err.textContent = 'Email and password are required.'; return; }}
+  if (password.length < 8) {{ err.textContent = 'Password must be at least 8 characters.'; return; }}
+  const btn = document.getElementById('signup-btn');
+  btn.disabled = true; btn.textContent = 'Signing up…';
+  try {{
+    const r = await fetch('/v1/account/signup', {{
+      method: 'POST',
+      headers: {{ 'content-type': 'application/json' }},
+      body: JSON.stringify({{ email, password }})
+    }});
+    if (!r.ok) {{
+      const body = await r.json().catch(() => ({{detail: 'signup failed'}}));
+      err.textContent = body.detail || 'signup failed';
+      btn.disabled = false; btn.textContent = 'Sign up';
+      return;
+    }}
+    const body = await r.json();
+    localStorage.setItem(KEY_STORAGE, body.api_key);
+    document.getElementById('api-key-display').textContent = body.api_key;
+    document.getElementById('dashboard-link').href = body.dashboard_url;
+    setDone('step-signup');
+    setActive('step-key');
+    setTimeout(() => setActive('step-snippet'), 600);
+    startPolling();
+  }} catch (e) {{
+    err.textContent = 'Network error — please retry.';
+    btn.disabled = false; btn.textContent = 'Sign up';
+  }}
+}}
+
+function copyText(id, btn) {{
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {{
+    const original = btn.textContent;
+    btn.textContent = 'Copied';
+    setTimeout(() => {{ btn.textContent = original; }}, 1200);
+  }});
+}}
+
+let pollTimer = null;
+function startPolling() {{
+  const key = localStorage.getItem(KEY_STORAGE);
+  if (!key) return;
+  let attempts = 0;
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {{
+    attempts += 1;
+    try {{
+      const r = await fetch('/v1/account/usage', {{ headers: {{ 'x-api-key': key }} }});
+      if (!r.ok) return;
+      const body = await r.json();
+      const total = (body.points || []).reduce((s, p) => s + p.count, 0);
+      if (total > 0) {{
+        clearInterval(pollTimer);
+        setDone('step-snippet');
+        setDone('step-attestation');
+        document.getElementById('poll-status').innerHTML =
+          '<span class="ok">✓ First attestation received.</span> '
+          + total.toLocaleString() + ' receipt(s) so far.';
+      }} else if (attempts > 120) {{
+        // Stop after ~4 minutes to avoid an infinite poll.
+        clearInterval(pollTimer);
+        document.getElementById('poll-status').textContent =
+          'No attestations yet. Run the snippet, then refresh the dashboard.';
+      }}
+    }} catch (_) {{ /* swallow — keep polling */ }}
+  }}, 2000);
+}}
+
+// If the user already signed up earlier this session, resume mid-flow.
+const existing = localStorage.getItem(KEY_STORAGE);
+if (existing) {{
+  document.getElementById('api-key-display').textContent = existing;
+  setDone('step-signup');
+  setActive('step-snippet');
+  startPolling();
+}}
+</script>
+</body>
+</html>"##,
+        safe_base = safe_base,
+        base_url_js = serde_json::to_string(base_url).unwrap_or_else(|_| "\"\"".to_string()),
+    )
+}
+
 /// Banner page for share links whose underlying attestations failed
 /// re-verification. We render this in place of the receipts so an auditor
 /// sees the tamper signal directly rather than an opaque HTTP error.
