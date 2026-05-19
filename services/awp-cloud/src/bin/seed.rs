@@ -20,7 +20,7 @@ use awp_cloud::blob::filesystem::FsBlobStore;
 use awp_cloud::blob::BlobStore;
 use awp_cloud::canonical::{blob_sha256, canonical_blob_bytes};
 use awp_cloud::store::postgres::PgDb;
-use awp_cloud::store::{AttestationIndex, Db};
+use awp_cloud::store::{AttestationIndex, Db, Plan};
 
 const SEED_COUNT: usize = 10_000;
 
@@ -35,7 +35,7 @@ async fn main() -> anyhow::Result<()> {
     db.apply_migrations().await?;
     let blob = FsBlobStore::new(&blob_root);
 
-    let account = db.create_account("seed@local.test").await?;
+    let account = db.create_account("seed@local.test", Plan::Team).await?;
     let cleartext = generate_api_key();
     let phc = hash_api_key(&cleartext)?;
     db.create_api_key(account.id, "seed-project", &phc).await?;

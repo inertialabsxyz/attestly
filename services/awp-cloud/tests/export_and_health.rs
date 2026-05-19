@@ -67,10 +67,10 @@ async fn export_requires_api_key() {
 }
 
 #[tokio::test]
-async fn billing_webhook_returns_501() {
+async fn billing_webhook_rejects_missing_signature() {
     let h = Harness::new().await;
-    // Step 4 fills this in. The route must exist (the routing layer is
-    // locked); the body must be 501 in Step 2.
+    // Step 4: webhook is wired. With no `Stripe-Signature` header the
+    // request must be refused, never reaching the dispatcher.
     let req = axum::http::Request::builder()
         .method("POST")
         .uri("/v1/billing/webhook")
@@ -78,5 +78,5 @@ async fn billing_webhook_returns_501() {
         .body(axum::body::Body::from("{}"))
         .unwrap();
     let resp = h.send(req).await;
-    assert_eq!(resp.status(), StatusCode::NOT_IMPLEMENTED);
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
 }

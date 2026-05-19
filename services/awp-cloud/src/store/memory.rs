@@ -7,13 +7,13 @@ use std::collections::BTreeMap;
 use std::sync::Mutex;
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use uuid::Uuid;
 
 use crate::error::ApiError;
 use crate::store::{
-    Account, ApiKeyRecord, AttestationIndex, Db, IngestOutcome, SearchFilters, SearchPage,
-    ShareLink,
+    Account, ApiKeyRecord, AttestationIndex, DailyUsage, Db, IngestOutcome, Plan, SearchFilters,
+    SearchPage, ShareLink,
 };
 
 #[derive(Default)]
@@ -60,16 +60,189 @@ impl Db for MemDb {
         Ok(())
     }
 
-    async fn create_account(&self, email: &str) -> Result<Account, ApiError> {
+    async fn create_account(&self, email: &str, plan: Plan) -> Result<Account, ApiError> {
         let acct = Account {
             id: Uuid::new_v4(),
             email: email.to_string(),
+            plan,
             stripe_customer_id: None,
-            retention_days: 365,
+            stripe_subscription_id: None,
+            retention_days: plan.retention_days(),
+            billed_through: None,
             created_at: Utc::now(),
         };
         lock_internal(&self.inner, |inner| inner.accounts.push(acct.clone()))?;
         Ok(acct)
+    }
+
+    async fn upsert_account_by_email(
+        &self,
+        email: &str,
+        plan: Plan,
+    ) -> Result<(Account, bool), ApiError> {
+        if let Some(existing) = lock_internal(&self.inner, |inner| {
+            inner.accounts.iter().find(|a| a.email == email).cloned()
+        })? {
+            return Ok((existing, false));
+        }
+        let acct = self.create_account(email, plan).await?;
+        Ok((acct, true))
+    }
+
+    async fn find_account_by_stripe_customer(
+        &self,
+        stripe_customer_id: &str,
+    ) -> Result<Option<Account>, ApiError> {
+        lock_internal(&self.inner, |inner| {
+            inner
+                .accounts
+                .iter()
+                .find(|a| a.stripe_customer_id.as_deref() == Some(stripe_customer_id))
+                .cloned()
+        })
+    }
+
+    async fn fetch_account(&self, id: Uuid) -> Result<Option<Account>, ApiError> {
+        lock_internal(&self.inner, |inner| {
+            inner.accounts.iter().find(|a| a.id == id).cloned()
+        })
+    }
+
+    async fn set_account_stripe_ids(
+        &self,
+        account_id: Uuid,
+        stripe_customer_id: &str,
+        stripe_subscription_id: Option<&str>,
+    ) -> Result<(), ApiError> {
+        lock_internal(&self.inner, |inner| {
+            if let Some(acct) = inner.accounts.iter_mut().find(|a| a.id == account_id) {
+                acct.stripe_customer_id = Some(stripe_customer_id.to_string());
+                if let Some(sub) = stripe_subscription_id {
+                    acct.stripe_subscription_id = Some(sub.to_string());
+                }
+            }
+        })
+    }
+
+    async fn set_account_plan(&self, account_id: Uuid, plan: Plan) -> Result<(), ApiError> {
+        lock_internal(&self.inner, |inner| {
+            if let Some(acct) = inner.accounts.iter_mut().find(|a| a.id == account_id) {
+                acct.plan = plan;
+                acct.retention_days = plan.retention_days();
+            }
+        })
+    }
+
+    async fn set_billed_through(
+        &self,
+        account_id: Uuid,
+        through: NaiveDate,
+    ) -> Result<(), ApiError> {
+        lock_internal(&self.inner, |inner| {
+            if let Some(acct) = inner.accounts.iter_mut().find(|a| a.id == account_id) {
+                acct.billed_through = Some(through);
+            }
+        })
+    }
+
+    async fn account_usage_in_range(
+        &self,
+        account_id: Uuid,
+        from: NaiveDate,
+        to: NaiveDate,
+    ) -> Result<i64, ApiError> {
+        lock_internal(&self.inner, |inner| {
+            inner
+                .usage
+                .iter()
+                .filter(|((aid, day), _)| {
+                    if *aid != account_id {
+                        return false;
+                    }
+                    let Ok(parsed) = NaiveDate::parse_from_str(day, "%Y-%m-%d") else {
+                        return false;
+                    };
+                    parsed >= from && parsed < to
+                })
+                .map(|(_, v)| *v)
+                .sum()
+        })
+    }
+
+    async fn usage_for_period(
+        &self,
+        account_id: Uuid,
+        from: NaiveDate,
+        to: NaiveDate,
+    ) -> Result<Vec<DailyUsage>, ApiError> {
+        lock_internal(&self.inner, |inner| {
+            let mut rows: Vec<DailyUsage> = inner
+                .usage
+                .iter()
+                .filter_map(|((aid, day), count)| {
+                    if *aid != account_id {
+                        return None;
+                    }
+                    let parsed = NaiveDate::parse_from_str(day, "%Y-%m-%d").ok()?;
+                    if parsed < from || parsed >= to {
+                        return None;
+                    }
+                    Some(DailyUsage {
+                        day: parsed,
+                        count: *count,
+                    })
+                })
+                .collect();
+            rows.sort_by_key(|r| r.day);
+            rows
+        })
+    }
+
+    async fn list_active_api_keys(&self, account_id: Uuid) -> Result<Vec<ApiKeyRecord>, ApiError> {
+        lock_internal(&self.inner, |inner| {
+            inner
+                .keys
+                .iter()
+                .filter(|k| k.account_id == account_id && k.revoked_at.is_none())
+                .cloned()
+                .collect()
+        })
+    }
+
+    async fn revoke_api_key(&self, account_id: Uuid, key_id: Uuid) -> Result<bool, ApiError> {
+        lock_internal(&self.inner, |inner| {
+            for k in inner.keys.iter_mut() {
+                if k.id == key_id && k.account_id == account_id && k.revoked_at.is_none() {
+                    k.revoked_at = Some(Utc::now());
+                    return true;
+                }
+            }
+            false
+        })
+    }
+
+    async fn delete_attestations_older_than(
+        &self,
+        account_id: Uuid,
+        older_than: DateTime<Utc>,
+    ) -> Result<u64, ApiError> {
+        lock_internal(&self.inner, |inner| {
+            let before = inner.attestations.len();
+            inner
+                .attestations
+                .retain(|a| !(a.account_id == account_id && a.received_at < older_than));
+            (before - inner.attestations.len()) as u64
+        })
+    }
+
+    async fn mark_swept(&self, _account_id: Uuid, _at: DateTime<Utc>) -> Result<(), ApiError> {
+        // Bookkeeping column only; in-memory store keeps no separate field
+        // for it. The Postgres impl persists `accounts.last_swept_at`.
+        Ok(())
+    }
+
+    async fn list_accounts(&self) -> Result<Vec<Account>, ApiError> {
+        lock_internal(&self.inner, |inner| inner.accounts.clone())
     }
 
     async fn create_api_key(
