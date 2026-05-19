@@ -1,0 +1,31 @@
+[package]
+name = "awp-python"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Python bindings for awp-core via PyO3 — sign and verify AWP attestations from Python"
+
+[lib]
+name = "awp_core_py"
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# `extension-module` is required when building the cdylib that Python loads.
+# It is *not* default because enabling it breaks linking under plain
+# `cargo build` / `cargo test` (the Python interpreter resolves the symbols
+# at load time, so the static link fails). `maturin` enables it via
+# `[tool.maturin].features` in `pyproject.toml`.
+default = []
+extension-module = ["pyo3/extension-module"]
+
+[dependencies]
+awp-core = { workspace = true }
+pyo3 = { version = "0.28", features = ["abi3-py39"] }
+serde_json = { workspace = true }
+hex = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+ed25519-dalek = { workspace = true }

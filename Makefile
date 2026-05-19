@@ -1,24 +1,50 @@
 .PHONY: check lint test test-unit test-int fix \
+        check-python python-build python-test \
         cloud-check cloud-lint cloud-test cloud-fix
 
-# Top-level gate: lint + test both workspaces. `services/awp-cloud/` is its
-# own workspace by design (independent release cadence, isolation from the
-# core crate's clippy regime); we run its `make check` recursively here so
-# every contributor's `make check` is a complete CI proxy.
-check: lint test cloud-check
+# Python venv used for the awp-python tests. Override with PY_VENV=... at
+# the call site if you want to point at an existing interpreter. The
+# `python-build` target creates it on first use.
+PY_VENV ?= .venv
+PY_VENV_BIN := $(PY_VENV)/bin
+
+# Top-level gate: lint + test the core workspace, the Python bindings, and
+# the `services/awp-cloud/` sub-workspace (which is its own Cargo workspace
+# by design — independent release cadence, isolated from the core's clippy
+# regime). Every contributor's `make check` is a complete CI proxy.
+check: lint test check-python cloud-check
 
 lint:
 	cargo fmt --all -- --check
 	cargo clippy --workspace --all-targets -- -D warnings
 
+# `awp-python` is excluded from `cargo test` because its `cdylib` target
+# triggers a libpython link error on platforms where the Python
+# framework's rpath is not on the linker's default search path. The
+# Python-side tests under `crates/awp-python/tests/` cover that crate's
+# surface via pytest (run by `check-python`).
 test:
-	cargo test --workspace
+	cargo test --workspace --exclude awp-python
 
 test-unit:
-	cargo test --workspace --lib
+	cargo test --workspace --exclude awp-python --lib
 
 test-int:
-	cargo test --workspace --tests
+	cargo test --workspace --exclude awp-python --tests
+
+# Build the Python wheel + run pytest. Builds the `awp-verify` binary
+# first so `tests/cross_language.py` can pipe attestations through it.
+check-python: python-build python-test
+
+python-build:
+	@test -d $(PY_VENV) || python3 -m venv $(PY_VENV)
+	$(PY_VENV_BIN)/pip install --quiet --upgrade pip
+	$(PY_VENV_BIN)/pip install --quiet maturin pytest
+	cargo build -p awp-core --bin awp-verify --release
+	cd crates/awp-python && ../../$(PY_VENV_BIN)/maturin develop --release --quiet
+
+python-test:
+	$(PY_VENV_BIN)/python -m pytest crates/awp-python/tests -v
 
 fix:
 	cargo fmt --all
