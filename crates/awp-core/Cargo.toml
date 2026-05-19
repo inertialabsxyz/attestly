@@ -6,6 +6,10 @@ license.workspace = true
 repository.workspace = true
 description = "Core data structures, signing, and storage for the Agent Work Protocol"
 
+[[bin]]
+name = "awp-verify"
+path = "src/bin/awp_verify.rs"
+
 [dependencies]
 ed25519-dalek = { workspace = true }
 sha2 = { workspace = true }

@@ -4,6 +4,7 @@ members = [
     "crates/awp-core",
     "crates/awp-agents",
     "crates/awp-examples",
+    "crates/awp-python",
 ]
 
 [workspace.package]

@@ -3,3 +3,15 @@ data/*
 !data/.gitkeep
 attestations.json
 executions.json
+
+# Python tooling
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+crates/awp-python/dist/
+crates/awp-python/*.egg-info/
+# PyO3 extension built in place by `maturin develop`
+crates/awp-python/python/awp/_native.*.so
+crates/awp-python/python/awp/_native.*.pyd
+crates/awp-python/python/awp/_native.*.dylib
