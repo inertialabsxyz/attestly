@@ -1,4 +1,6 @@
-.PHONY: check lint test test-unit test-int fix check-python python-build python-test
+.PHONY: check lint test test-unit test-int fix \
+        check-python python-build python-test \
+        cloud-check cloud-lint cloud-test cloud-fix
 
 # Python venv used for the awp-python tests. Override with PY_VENV=... at
 # the call site if you want to point at an existing interpreter. The
@@ -6,7 +8,11 @@
 PY_VENV ?= .venv
 PY_VENV_BIN := $(PY_VENV)/bin
 
-check: lint test check-python
+# Top-level gate: lint + test the core workspace, the Python bindings, and
+# the `services/awp-cloud/` sub-workspace (which is its own Cargo workspace
+# by design — independent release cadence, isolated from the core's clippy
+# regime). Every contributor's `make check` is a complete CI proxy.
+check: lint test check-python cloud-check
 
 lint:
 	cargo fmt --all -- --check
@@ -43,3 +49,17 @@ python-test:
 fix:
 	cargo fmt --all
 	cargo clippy --workspace --all-targets --fix --allow-dirty --allow-staged
+	$(MAKE) -C services/awp-cloud fix
+
+# Recursive targets into the awp-cloud sub-workspace.
+cloud-check:
+	$(MAKE) -C services/awp-cloud check
+
+cloud-lint:
+	$(MAKE) -C services/awp-cloud lint
+
+cloud-test:
+	$(MAKE) -C services/awp-cloud test
+
+cloud-fix:
+	$(MAKE) -C services/awp-cloud fix

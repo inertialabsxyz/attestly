@@ -4,6 +4,9 @@ data/*
 attestations.json
 executions.json
 
+# awp-cloud local dev outputs
+services/awp-cloud/data/
+
 # Python tooling
 .venv/
 __pycache__/
