@@ -1,5 +1,5 @@
 .PHONY: check lint test test-unit test-int fix \
-        check-python python-build python-test \
+        check-python python-build python-test python-test-langgraph \
         cloud-check cloud-lint cloud-test cloud-fix \
         seed-overage seed-old-attestations
 
@@ -35,7 +35,7 @@ test-int:
 
 # Build the Python wheel + run pytest. Builds the `awp-verify` binary
 # first so `tests/cross_language.py` can pipe attestations through it.
-check-python: python-build python-test
+check-python: python-build python-test python-test-langgraph
 
 python-build:
 	@test -d $(PY_VENV) || python3 -m venv $(PY_VENV)
@@ -46,6 +46,13 @@ python-build:
 
 python-test:
 	$(PY_VENV_BIN)/python -m pytest crates/awp-python/tests -v
+
+# `awp-langgraph` is a pure-Python package that lives outside the maturin
+# build. We run its pytest with the package directory on PYTHONPATH so the
+# check works against the in-tree source without needing a separate install
+# step. This also keeps the gate green even before the package is published.
+python-test-langgraph:
+	PYTHONPATH=python/awp-langgraph $(PY_VENV_BIN)/python -m pytest python/awp-langgraph/tests -v
 
 fix:
 	cargo fmt --all
