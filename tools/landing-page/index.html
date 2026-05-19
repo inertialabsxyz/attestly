@@ -827,6 +827,53 @@ section.pricing p.lead {
 }
 .pricing-footnote strong { color: var(--paper); font-weight: 500; }
 
+.free-to-leave {
+    margin-top: 64px;
+    padding: 40px 36px;
+    background: #111;
+    border: 1px solid var(--rule-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 12px;
+    max-width: 72ch;
+}
+.free-to-leave h3 {
+    font-size: 28px;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+    margin: 0 0 18px 0;
+}
+.free-to-leave h3 em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent);
+}
+.free-to-leave p {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--muted);
+    margin: 0 0 16px 0;
+}
+.free-to-leave p strong { color: var(--paper); font-weight: 500; }
+.free-to-leave pre {
+    background: var(--ink);
+    border: 1px solid var(--rule-soft);
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin: 0 0 16px 0;
+    overflow-x: auto;
+    font-family: "SF Mono", "Menlo", "Monaco", "Consolas", monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--paper);
+}
+.free-to-leave pre code { color: inherit; background: none; padding: 0; }
+.free-to-leave .leave-note {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
 /* ---------- what-its-not ---------- */
 
 section.not {
@@ -1388,13 +1435,14 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
                 <p class="tier-strap">Hosted retention and sharing for teams running agents in production. Self-serve, Stripe checkout, cancel any time.</p>
                 <ul>
                     <li>1M attestations / month</li>
+                    <li>$0.10 per additional 1k attestations</li>
                     <li>1-year retention</li>
                     <li>Hosted viewer + share-links</li>
                     <li>Search by agent, customer, time</li>
                     <li>API key access from CloudSink</li>
                     <li>Email support, &lt; 24h response</li>
                 </ul>
-                <a href="#final" class="tier-cta">Start a trial</a>
+                <a href="https://app.awp-cloud.xyz/billing/checkout?plan=team" class="tier-cta">Start free trial</a>
             </div>
             <div class="price-card">
                 <div class="tier-label">Regulated buyers</div>
@@ -1409,14 +1457,29 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
                     <li>Compliance report templates</li>
                     <li>Dedicated SE, MSA &amp; DPA, SLA</li>
                 </ul>
-                <a href="#final" class="tier-cta">Get a quote</a>
+                <a href="mailto:hello@inertialabs.xyz?subject=AWP%20Enterprise%20enquiry" class="tier-cta">Contact sales</a>
             </div>
         </div>
-        <p class="pricing-footnote">
-            <strong>Free to start. Free to leave.</strong> The SDK is open source. The viewer is a static
-            HTML file. If you stop paying us, your existing receipts keep verifying forever — because the
-            signatures don't depend on us. Export everything you've ever stored as JSONL with one API call.
-        </p>
+        <div class="free-to-leave" id="free-to-leave">
+            <h3>Free to start. <em>Free to leave.</em></h3>
+            <p>
+                <strong>Cancelling does not invalidate your receipts.</strong> Every attestation we
+                ever stored for you is a self-contained Ed25519-signed record — its proof lives in
+                the bytes, not in our database. The OSS audit viewer re-verifies them with no
+                network call to us.
+            </p>
+            <p>
+                One command pulls everything down as JSON Lines, ready to drop into the static
+                viewer or your own pipeline:
+            </p>
+            <pre><code>curl -H "x-api-key: $AWP_KEY" \
+     https://app.awp-cloud.xyz/v1/export &gt; receipts.jsonl</code></pre>
+            <p class="leave-note">
+                The export endpoint stays available for 30 days after cancellation. After that,
+                your data is purged per our retention promise — but the receipts you exported
+                stay valid forever, because the math doesn't depend on us.
+            </p>
+        </div>
     </div>
 </section>
 

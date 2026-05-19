@@ -20,8 +20,8 @@ use uuid::Uuid;
 
 use crate::error::ApiError;
 use crate::store::{
-    Account, ApiKeyRecord, AttestationIndex, Db, IngestOutcome, SearchFilters, SearchPage,
-    ShareLink,
+    Account, ApiKeyRecord, AttestationIndex, DailyUsage, Db, IngestOutcome, Plan, SearchFilters,
+    SearchPage, ShareLink,
 };
 
 pub struct PgDb {
@@ -72,6 +72,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "0002_usage.sql",
         include_str!("../../migrations/0002_usage.sql"),
     ),
+    (
+        "0003_billing.sql",
+        include_str!("../../migrations/0003_billing.sql"),
+    ),
 ];
 
 fn map_err(e: sqlx::Error) -> ApiError {
@@ -79,11 +83,15 @@ fn map_err(e: sqlx::Error) -> ApiError {
 }
 
 fn row_to_account(row: sqlx::postgres::PgRow) -> Result<Account, ApiError> {
+    let plan_slug: String = row.try_get("plan").map_err(map_err)?;
     Ok(Account {
         id: row.try_get("id").map_err(map_err)?,
         email: row.try_get("email").map_err(map_err)?,
+        plan: Plan::from_slug(&plan_slug)?,
         stripe_customer_id: row.try_get("stripe_customer_id").map_err(map_err)?,
+        stripe_subscription_id: row.try_get("stripe_subscription_id").map_err(map_err)?,
         retention_days: row.try_get("retention_days").map_err(map_err)?,
+        billed_through: row.try_get("billed_through").map_err(map_err)?,
         created_at: row.try_get("created_at").map_err(map_err)?,
     })
 }
@@ -133,17 +141,228 @@ impl Db for PgDb {
         Ok(())
     }
 
-    async fn create_account(&self, email: &str) -> Result<Account, ApiError> {
+    async fn create_account(&self, email: &str, plan: Plan) -> Result<Account, ApiError> {
         let row = sqlx::query(
-            "INSERT INTO accounts (id, email, retention_days, created_at) \
-             VALUES ($1, $2, 365, NOW()) RETURNING *",
+            "INSERT INTO accounts (id, email, plan, retention_days, created_at) \
+             VALUES ($1, $2, $3, $4, NOW()) RETURNING *",
         )
         .bind(Uuid::new_v4())
         .bind(email)
+        .bind(plan.as_slug())
+        .bind(plan.retention_days())
         .fetch_one(&self.pool)
         .await
         .map_err(map_err)?;
         row_to_account(row)
+    }
+
+    async fn upsert_account_by_email(
+        &self,
+        email: &str,
+        plan: Plan,
+    ) -> Result<(Account, bool), ApiError> {
+        // ON CONFLICT here keeps `checkout.session.completed` re-deliveries
+        // idempotent: a repeated webhook for the same email returns the
+        // existing row and (false) so the caller knows not to issue a new
+        // API key.
+        let row = sqlx::query(
+            "INSERT INTO accounts (id, email, plan, retention_days, created_at) \
+             VALUES ($1, $2, $3, $4, NOW()) \
+             ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email RETURNING *, \
+             (xmax = 0) AS inserted",
+        )
+        .bind(Uuid::new_v4())
+        .bind(email)
+        .bind(plan.as_slug())
+        .bind(plan.retention_days())
+        .fetch_one(&self.pool)
+        .await
+        .map_err(map_err)?;
+        let inserted: bool = row.try_get("inserted").map_err(map_err)?;
+        Ok((row_to_account(row)?, inserted))
+    }
+
+    async fn find_account_by_stripe_customer(
+        &self,
+        stripe_customer_id: &str,
+    ) -> Result<Option<Account>, ApiError> {
+        let row = sqlx::query("SELECT * FROM accounts WHERE stripe_customer_id = $1")
+            .bind(stripe_customer_id)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(map_err)?;
+        match row {
+            Some(r) => Ok(Some(row_to_account(r)?)),
+            None => Ok(None),
+        }
+    }
+
+    async fn fetch_account(&self, id: Uuid) -> Result<Option<Account>, ApiError> {
+        let row = sqlx::query("SELECT * FROM accounts WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(map_err)?;
+        match row {
+            Some(r) => Ok(Some(row_to_account(r)?)),
+            None => Ok(None),
+        }
+    }
+
+    async fn set_account_stripe_ids(
+        &self,
+        account_id: Uuid,
+        stripe_customer_id: &str,
+        stripe_subscription_id: Option<&str>,
+    ) -> Result<(), ApiError> {
+        sqlx::query(
+            "UPDATE accounts SET stripe_customer_id = $1, \
+             stripe_subscription_id = COALESCE($2, stripe_subscription_id) WHERE id = $3",
+        )
+        .bind(stripe_customer_id)
+        .bind(stripe_subscription_id)
+        .bind(account_id)
+        .execute(&self.pool)
+        .await
+        .map_err(map_err)?;
+        Ok(())
+    }
+
+    async fn set_account_plan(&self, account_id: Uuid, plan: Plan) -> Result<(), ApiError> {
+        sqlx::query("UPDATE accounts SET plan = $1, retention_days = $2 WHERE id = $3")
+            .bind(plan.as_slug())
+            .bind(plan.retention_days())
+            .bind(account_id)
+            .execute(&self.pool)
+            .await
+            .map_err(map_err)?;
+        Ok(())
+    }
+
+    async fn set_billed_through(
+        &self,
+        account_id: Uuid,
+        through: NaiveDate,
+    ) -> Result<(), ApiError> {
+        sqlx::query("UPDATE accounts SET billed_through = $1 WHERE id = $2")
+            .bind(through)
+            .bind(account_id)
+            .execute(&self.pool)
+            .await
+            .map_err(map_err)?;
+        Ok(())
+    }
+
+    async fn account_usage_in_range(
+        &self,
+        account_id: Uuid,
+        from: NaiveDate,
+        to: NaiveDate,
+    ) -> Result<i64, ApiError> {
+        let row = sqlx::query(
+            "SELECT COALESCE(SUM(attestation_count), 0)::BIGINT AS total \
+             FROM usage WHERE account_id = $1 AND day >= $2 AND day < $3",
+        )
+        .bind(account_id)
+        .bind(from)
+        .bind(to)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(map_err)?;
+        let total: i64 = row.try_get("total").map_err(map_err)?;
+        Ok(total)
+    }
+
+    async fn usage_for_period(
+        &self,
+        account_id: Uuid,
+        from: NaiveDate,
+        to: NaiveDate,
+    ) -> Result<Vec<DailyUsage>, ApiError> {
+        let rows = sqlx::query(
+            "SELECT day, attestation_count FROM usage \
+             WHERE account_id = $1 AND day >= $2 AND day < $3 ORDER BY day ASC",
+        )
+        .bind(account_id)
+        .bind(from)
+        .bind(to)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(map_err)?;
+        let mut out = Vec::with_capacity(rows.len());
+        for r in rows {
+            out.push(DailyUsage {
+                day: r.try_get("day").map_err(map_err)?,
+                count: r.try_get("attestation_count").map_err(map_err)?,
+            });
+        }
+        Ok(out)
+    }
+
+    async fn list_active_api_keys(&self, account_id: Uuid) -> Result<Vec<ApiKeyRecord>, ApiError> {
+        let rows = sqlx::query(
+            "SELECT * FROM api_keys WHERE account_id = $1 AND revoked_at IS NULL \
+             ORDER BY created_at DESC",
+        )
+        .bind(account_id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(map_err)?;
+        let mut out = Vec::with_capacity(rows.len());
+        for r in rows {
+            out.push(row_to_key(r)?);
+        }
+        Ok(out)
+    }
+
+    async fn revoke_api_key(&self, account_id: Uuid, key_id: Uuid) -> Result<bool, ApiError> {
+        let res = sqlx::query(
+            "UPDATE api_keys SET revoked_at = NOW() \
+             WHERE id = $1 AND account_id = $2 AND revoked_at IS NULL",
+        )
+        .bind(key_id)
+        .bind(account_id)
+        .execute(&self.pool)
+        .await
+        .map_err(map_err)?;
+        Ok(res.rows_affected() > 0)
+    }
+
+    async fn delete_attestations_older_than(
+        &self,
+        account_id: Uuid,
+        older_than: DateTime<Utc>,
+    ) -> Result<u64, ApiError> {
+        let res =
+            sqlx::query("DELETE FROM attestations WHERE account_id = $1 AND received_at < $2")
+                .bind(account_id)
+                .bind(older_than)
+                .execute(&self.pool)
+                .await
+                .map_err(map_err)?;
+        Ok(res.rows_affected())
+    }
+
+    async fn mark_swept(&self, account_id: Uuid, at: DateTime<Utc>) -> Result<(), ApiError> {
+        sqlx::query("UPDATE accounts SET last_swept_at = $1 WHERE id = $2")
+            .bind(at)
+            .bind(account_id)
+            .execute(&self.pool)
+            .await
+            .map_err(map_err)?;
+        Ok(())
+    }
+
+    async fn list_accounts(&self) -> Result<Vec<Account>, ApiError> {
+        let rows = sqlx::query("SELECT * FROM accounts ORDER BY created_at ASC")
+            .fetch_all(&self.pool)
+            .await
+            .map_err(map_err)?;
+        let mut out = Vec::with_capacity(rows.len());
+        for r in rows {
+            out.push(row_to_account(r)?);
+        }
+        Ok(out)
     }
 
     async fn create_api_key(

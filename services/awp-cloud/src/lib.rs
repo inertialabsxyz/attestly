@@ -45,9 +45,11 @@ pub mod error;
 pub mod handlers;
 pub mod state;
 pub mod store;
+pub mod stripe;
+pub mod sweeper;
 pub mod web;
 
-pub use state::AppState;
+pub use state::{AppState, BillingConfig};
 
 use axum::routing::{delete, get, post};
 use axum::Router;
@@ -71,8 +73,30 @@ pub fn router(state: AppState) -> Router {
         .route("/share/:token", get(handlers::share_links::render_page))
         .route("/v1/export", get(handlers::export::stream))
         .route(
+            "/v1/billing/checkout",
+            post(handlers::billing::create_checkout),
+        )
+        .route("/v1/billing/portal", post(handlers::billing::create_portal))
+        .route(
             "/v1/billing/webhook",
             post(handlers::billing::handle_stripe_webhook),
         )
+        .route(
+            "/v1/admin/bill-period",
+            post(handlers::billing::bill_period),
+        )
+        .route(
+            "/billing/checkout",
+            get(handlers::billing::landing_checkout),
+        )
+        .route("/v1/account", get(handlers::account::get))
+        .route("/v1/account/usage", get(handlers::account::usage))
+        .route("/v1/account/api-keys", get(handlers::account::list_keys))
+        .route("/v1/account/api-keys", post(handlers::account::create_key))
+        .route(
+            "/v1/account/api-keys/:id",
+            delete(handlers::account::revoke_key),
+        )
+        .route("/dashboard", get(handlers::account::render_dashboard))
         .with_state(state)
 }

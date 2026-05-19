@@ -10,8 +10,9 @@ use std::sync::Arc;
 use awp_cloud::auth::{generate_api_key, hash_api_key};
 use awp_cloud::blob::memory::MemBlobStore;
 use awp_cloud::store::memory::MemDb;
-use awp_cloud::store::{Account, Db};
-use awp_cloud::{router, AppState};
+use awp_cloud::store::{Account, Db, Plan};
+use awp_cloud::stripe::MockStripeClient;
+use awp_cloud::{router, AppState, BillingConfig};
 use awp_core::{signing::AgentKeypair, Attestation, AttestationStatus};
 use axum::body::Body;
 use axum::http::{Request, Response, StatusCode};
@@ -26,23 +27,29 @@ pub struct Harness {
     #[allow(dead_code)]
     pub account: Account,
     pub api_key: String,
+    // reason: only the billing test binary downcasts this to inspect calls;
+    // other binaries don't touch it.
+    #[allow(dead_code)]
+    pub stripe: Arc<MockStripeClient>,
 }
 
 impl Harness {
     pub async fn new() -> Self {
         let db: Arc<dyn Db> = Arc::new(MemDb::new());
         let blob = Arc::new(MemBlobStore::new());
-        let account = db.create_account("test@local").await.unwrap();
+        let account = db.create_account("test@local", Plan::Team).await.unwrap();
         let cleartext = generate_api_key();
         let phc = hash_api_key(&cleartext).unwrap();
         db.create_api_key(account.id, "default", &phc)
             .await
             .unwrap();
-        let state = AppState::new(db, blob);
+        let stripe = Arc::new(MockStripeClient::new());
+        let state = AppState::new(db, blob, stripe.clone(), BillingConfig::for_tests());
         Self {
             state,
             account,
             api_key: cleartext,
+            stripe,
         }
     }
 
@@ -51,7 +58,12 @@ impl Harness {
     // independently so cargo's dead-code lint sees only its own callers.
     #[allow(dead_code)]
     pub async fn second_account(&self) -> (Account, String) {
-        let acct = self.state.db.create_account("second@local").await.unwrap();
+        let acct = self
+            .state
+            .db
+            .create_account("second@local", Plan::Team)
+            .await
+            .unwrap();
         let key = generate_api_key();
         let phc = hash_api_key(&key).unwrap();
         self.state

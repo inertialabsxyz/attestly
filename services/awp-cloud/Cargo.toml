@@ -18,6 +18,10 @@ path = "src/main.rs"
 name = "awp-cloud-seed"
 path = "src/bin/seed.rs"
 
+[[bin]]
+name = "sweeper"
+path = "src/bin/sweeper.rs"
+
 [lib]
 name = "awp_cloud"
 path = "src/lib.rs"
@@ -49,6 +53,11 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 async-trait = "0.1"
 futures = "0.3"
+
+# Stripe live client (Step 4). The mock client is plain Rust and needs no deps.
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+hmac = "0.12"
+subtle = "2"
 
 [dev-dependencies]
 tempfile = "3"

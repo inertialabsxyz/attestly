@@ -15,6 +15,7 @@
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::Context;
 use axum::Router;
@@ -22,7 +23,10 @@ use tower_http::trace::TraceLayer;
 
 use awp_cloud::blob::filesystem::FsBlobStore;
 use awp_cloud::store::postgres::PgDb;
-use awp_cloud::{router, AppState};
+use awp_cloud::store::Db;
+use awp_cloud::stripe::LiveStripeClient;
+use awp_cloud::sweeper;
+use awp_cloud::{router, AppState, BillingConfig};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -50,7 +54,17 @@ async fn main() -> anyhow::Result<()> {
     db.apply_migrations().await.context("apply migrations")?;
 
     let blob = FsBlobStore::new(&blob_root);
-    let state = AppState::new(Arc::new(db), Arc::new(blob));
+    let stripe = LiveStripeClient::from_env().context("stripe client")?;
+    let billing = BillingConfig::from_env();
+    let db: Arc<dyn Db> = Arc::new(db);
+    let state = AppState::new(db.clone(), Arc::new(blob), Arc::new(stripe), billing);
+
+    // Run the retention sweeper as a background task. 24h cadence is
+    // adequate granularity for day-scoped retention.
+    let sweep_db = db.clone();
+    tokio::spawn(async move {
+        sweeper::run_forever(sweep_db, Duration::from_secs(24 * 60 * 60)).await;
+    });
 
     let app: Router = router(state)
         .nest_service("/static", tower_http::services::ServeDir::new("web"))
