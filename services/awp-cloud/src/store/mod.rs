@@ -23,7 +23,10 @@ use crate::error::ApiError;
 /// A row from `accounts`. Stripe fields (`stripe_customer_id`,
 /// `stripe_subscription_id`) are populated by the Step 4 billing webhook;
 /// `billed_through` is the last UTC day we've already posted metered usage
-/// for and is the gate against double-billing on retry.
+/// for and is the gate against double-billing on retry. `password_hash` is
+/// populated by the Step 5 self-serve signup flow and remains NULL for
+/// accounts created via Stripe Checkout — those auth via their API key
+/// only.
 #[derive(Clone, Debug)]
 pub struct Account {
     pub id: Uuid,
@@ -33,6 +36,7 @@ pub struct Account {
     pub stripe_subscription_id: Option<String>,
     pub retention_days: i32,
     pub billed_through: Option<chrono::NaiveDate>,
+    pub password_hash: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -152,11 +156,42 @@ pub struct DailyUsage {
     pub count: i64,
 }
 
+/// One row of anonymous SDK telemetry. Keyed on (install_id, day) and
+/// deliberately not joined to `accounts` — see `0004_quickstart_telemetry.sql`
+/// for the privacy rationale.
+#[derive(Clone, Debug, Serialize)]
+pub struct TelemetryEvent {
+    pub install_id: Uuid,
+    pub day: chrono::NaiveDate,
+    pub sdk_version: String,
+    pub sink_type: String,
+    pub python_version: String,
+    pub os: String,
+    pub attestations_emitted_today: i64,
+    pub last_seen_at: DateTime<Utc>,
+}
+
 #[async_trait]
 pub trait Db: Send + Sync + 'static {
     async fn ping(&self) -> Result<(), ApiError>;
 
     async fn create_account(&self, email: &str, plan: Plan) -> Result<Account, ApiError>;
+
+    /// Self-serve signup variant used by the quickstart. Stores an Argon2id
+    /// hash of the user's password on the account row; subsequent
+    /// authentication still flows through the API-key path (the password is
+    /// only there so the user can re-enter the dashboard if they lose the
+    /// key surfaced at signup).
+    async fn create_account_with_password(
+        &self,
+        email: &str,
+        password_hash: &str,
+        plan: Plan,
+    ) -> Result<Account, ApiError>;
+
+    /// Lookup by email. Used by the signup handler to surface a uniform
+    /// 409 on collision.
+    async fn find_account_by_email(&self, email: &str) -> Result<Option<Account>, ApiError>;
 
     /// Look up an account by its stored Stripe customer id — the webhook
     /// dispatch path uses this to map `customer.subscription.updated` events
@@ -295,4 +330,20 @@ pub trait Db: Send + Sync + 'static {
     /// the tests and the dashboard; Stripe metered-billing reads this in
     /// Step 4.
     async fn account_usage_total(&self, account_id: Uuid) -> Result<i64, ApiError>;
+
+    /// Upsert one anonymous SDK telemetry sample. (install_id, day) is the
+    /// primary key — re-deliveries within the same UTC day overwrite the
+    /// existing row with the latest count rather than accumulating, because
+    /// the SDK sends a daily *aggregate*, not an increment.
+    async fn upsert_telemetry_event(&self, event: TelemetryEvent) -> Result<(), ApiError>;
+
+    /// Top FileSink installs by daily volume across the trailing window.
+    /// Drives the admin dashboard's "conversion-ready" view per the Step 5
+    /// plan ("> 10k attestations/day on FileSink is a strong signal").
+    async fn top_telemetry_volumes(
+        &self,
+        from: chrono::NaiveDate,
+        min_attestations: i64,
+        limit: usize,
+    ) -> Result<Vec<TelemetryEvent>, ApiError>;
 }

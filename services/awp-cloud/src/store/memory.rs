@@ -13,7 +13,7 @@ use uuid::Uuid;
 use crate::error::ApiError;
 use crate::store::{
     Account, ApiKeyRecord, AttestationIndex, DailyUsage, Db, IngestOutcome, Plan, SearchFilters,
-    SearchPage, ShareLink,
+    SearchPage, ShareLink, TelemetryEvent,
 };
 
 #[derive(Default)]
@@ -24,6 +24,9 @@ struct Inner {
     share_links: Vec<ShareLink>,
     /// `(account_id, yyyy-mm-dd) -> count`.
     usage: BTreeMap<(Uuid, String), i64>,
+    /// `(install_id, day) -> event`. Mirrors the Postgres primary key so
+    /// re-deliveries on the same day overwrite the existing row.
+    telemetry: BTreeMap<(Uuid, NaiveDate), TelemetryEvent>,
 }
 
 pub struct MemDb {
@@ -69,10 +72,38 @@ impl Db for MemDb {
             stripe_subscription_id: None,
             retention_days: plan.retention_days(),
             billed_through: None,
+            password_hash: None,
             created_at: Utc::now(),
         };
         lock_internal(&self.inner, |inner| inner.accounts.push(acct.clone()))?;
         Ok(acct)
+    }
+
+    async fn create_account_with_password(
+        &self,
+        email: &str,
+        password_hash: &str,
+        plan: Plan,
+    ) -> Result<Account, ApiError> {
+        let acct = Account {
+            id: Uuid::new_v4(),
+            email: email.to_string(),
+            plan,
+            stripe_customer_id: None,
+            stripe_subscription_id: None,
+            retention_days: plan.retention_days(),
+            billed_through: None,
+            password_hash: Some(password_hash.to_string()),
+            created_at: Utc::now(),
+        };
+        lock_internal(&self.inner, |inner| inner.accounts.push(acct.clone()))?;
+        Ok(acct)
+    }
+
+    async fn find_account_by_email(&self, email: &str) -> Result<Option<Account>, ApiError> {
+        lock_internal(&self.inner, |inner| {
+            inner.accounts.iter().find(|a| a.email == email).cloned()
+        })
     }
 
     async fn upsert_account_by_email(
@@ -419,6 +450,40 @@ impl Db for MemDb {
                 .filter(|((aid, _), _)| *aid == account_id)
                 .map(|(_, v)| *v)
                 .sum()
+        })
+    }
+
+    async fn upsert_telemetry_event(&self, event: TelemetryEvent) -> Result<(), ApiError> {
+        let key = (event.install_id, event.day);
+        lock_internal(&self.inner, |inner| {
+            inner.telemetry.insert(key, event);
+        })
+    }
+
+    async fn top_telemetry_volumes(
+        &self,
+        from: NaiveDate,
+        min_attestations: i64,
+        limit: usize,
+    ) -> Result<Vec<TelemetryEvent>, ApiError> {
+        lock_internal(&self.inner, |inner| {
+            let mut rows: Vec<TelemetryEvent> = inner
+                .telemetry
+                .values()
+                .filter(|e| {
+                    e.day >= from
+                        && e.attestations_emitted_today >= min_attestations
+                        && e.sink_type == "FileSink"
+                })
+                .cloned()
+                .collect();
+            rows.sort_by(|a, b| {
+                b.attestations_emitted_today
+                    .cmp(&a.attestations_emitted_today)
+                    .then(b.day.cmp(&a.day))
+            });
+            rows.truncate(limit);
+            rows
         })
     }
 }

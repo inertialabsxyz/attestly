@@ -98,5 +98,15 @@ pub fn router(state: AppState) -> Router {
             delete(handlers::account::revoke_key),
         )
         .route("/dashboard", get(handlers::account::render_dashboard))
+        .route("/quickstart", get(handlers::quickstart::render_quickstart))
+        .route("/v1/account/signup", post(handlers::quickstart::signup))
+        .route(
+            "/v1/telemetry/usage",
+            post(handlers::telemetry::ingest_usage),
+        )
+        .route(
+            "/v1/admin/telemetry/conversion-ready",
+            get(handlers::telemetry::conversion_ready),
+        )
         .with_state(state)
 }

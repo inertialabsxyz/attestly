@@ -1,0 +1,68 @@
+site_name: AWP — Agent Work Protocol
+site_url: https://docs.awp-cloud.xyz
+site_description: >-
+  Documentation for the Agent Work Protocol (AWP) — signed, verifiable
+  attestations of AI agent work. SDK reference, self-hosted path,
+  compliance pointers, and migration guides.
+repo_url: https://github.com/inertialabsxyz/awp
+repo_name: inertialabsxyz/awp
+edit_uri: edit/main/docs/site/docs/
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - content.action.edit
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: yellow
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: yellow
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - footnotes
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Concepts: concepts.md
+  - LangGraph integration: langgraph.md
+  - Self-hosted: self-hosted.md
+  - Compliance: compliance.md
+  - Migration: migration.md
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/inertialabsxyz/awp

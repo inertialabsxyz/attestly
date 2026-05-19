@@ -26,6 +26,9 @@ pub struct Harness {
     // that don't read it directly. Other binaries (search.rs, ingest.rs) do.
     #[allow(dead_code)]
     pub account: Account,
+    // reason: telemetry.rs and quickstart.rs mint their own keys via signup
+    // and never read this default one; other binaries do.
+    #[allow(dead_code)]
     pub api_key: String,
     // reason: only the billing test binary downcasts this to inspect calls;
     // other binaries don't touch it.
@@ -80,6 +83,9 @@ impl Harness {
     }
 }
 
+// reason: every binary except telemetry.rs (which never ingests a signed
+// attestation) calls this helper.
+#[allow(dead_code)]
 pub fn make_signed_attestation(
     kp: &AgentKeypair,
     agent_id: &str,
@@ -119,6 +125,9 @@ pub async fn body_text(resp: Response<Body>) -> (StatusCode, String) {
     (parts.status, String::from_utf8_lossy(&bytes).to_string())
 }
 
+// reason: telemetry.rs uses its own un-authenticated post helper; every
+// other binary calls this one.
+#[allow(dead_code)]
 pub fn post_json(uri: &str, api_key: &str, body: Value) -> Request<Body> {
     Request::builder()
         .method("POST")
