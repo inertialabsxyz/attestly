@@ -1,0 +1,59 @@
+:root {
+    --ink: #1a1a1a;
+    --ink-muted: #555;
+    --ink-faint: #888;
+    --rule: #d8d8d8;
+    --paper: #fafaf8;
+    --paper-card: #ffffff;
+    --green: #2f7a3a;
+    --red: #a02020;
+}
+* { box-sizing: border-box; }
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+        "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+}
+header {
+    border-bottom: 1px solid var(--rule);
+    padding: 28px 40px 20px 40px;
+    background: var(--paper-card);
+}
+header h1 { margin: 0 0 4px 0; font-size: 18px; font-weight: 600; }
+header p.lede {
+    margin: 0 0 8px 0;
+    color: var(--ink-muted);
+    font-size: 13px;
+    max-width: 80ch;
+}
+main { padding: 24px 40px 60px 40px; max-width: 1200px; }
+section h2 {
+    margin: 0 0 10px 0;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--ink-faint);
+    font-weight: 600;
+}
+.receipt {
+    background: var(--paper-card);
+    border: 1px solid var(--rule);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+.receipt code { background: #f4f1ea; padding: 1px 4px; }
+.receipt pre {
+    background: #f4f1ea;
+    padding: 8px;
+    overflow-x: auto;
+    font-size: 12px;
+}
+.verify-line { font-size: 12px; margin-bottom: 8px; }
+.verify-line.ok { color: var(--green); }
+.verify-line.bad { color: var(--red); font-weight: 600; }
+hr { border: 0; border-top: 1px solid var(--rule); margin: 12px 0; }

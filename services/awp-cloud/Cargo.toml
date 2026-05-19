@@ -1,0 +1,61 @@
+[workspace]
+resolver = "2"
+members = ["."]
+
+[package]
+name = "awp-cloud"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/inertialabsxyz/awp"
+description = "Hosted AWP attestation ingest, search, and share-link service."
+
+[[bin]]
+name = "awp-cloud"
+path = "src/main.rs"
+
+[[bin]]
+name = "awp-cloud-seed"
+path = "src/bin/seed.rs"
+
+[lib]
+name = "awp_cloud"
+path = "src/lib.rs"
+
+[dependencies]
+awp-core = { path = "../../crates/awp-core" }
+
+axum = { version = "0.7", features = ["macros"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "signal", "time", "fs"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["trace", "cors", "fs"] }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
+hex = "0.4"
+sha2 = "0.10"
+base64 = "0.22"
+rand = "0.8"
+argon2 = "0.5"
+
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "json"] }
+
+thiserror = "2"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+async-trait = "0.1"
+futures = "0.3"
+
+[dev-dependencies]
+tempfile = "3"
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+http = "1"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
