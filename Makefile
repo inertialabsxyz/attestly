@@ -1,6 +1,7 @@
 .PHONY: check lint test test-unit test-int fix \
         check-python python-build python-test \
-        cloud-check cloud-lint cloud-test cloud-fix
+        cloud-check cloud-lint cloud-test cloud-fix \
+        seed-overage seed-old-attestations
 
 # Python venv used for the awp-python tests. Override with PY_VENV=... at
 # the call site if you want to point at an existing interpreter. The
@@ -63,3 +64,11 @@ cloud-test:
 
 cloud-fix:
 	$(MAKE) -C services/awp-cloud fix
+
+# Step 4 verification helpers — forwarded into the awp-cloud sub-workspace
+# so they're discoverable from the repo root alongside `make check`.
+seed-overage:
+	$(MAKE) -C services/awp-cloud seed-overage
+
+seed-old-attestations:
+	$(MAKE) -C services/awp-cloud seed-old-attestations

@@ -1,19 +1,30 @@
-//! `make seed` entrypoint.
+//! `awp-cloud-seed` — synthetic data generator for hand-testing.
 //!
-//! Inserts 10k synthetic attestations under a single test account so the
-//! search and pagination paths can be exercised by hand. Prints the API key
-//! to stdout exactly once — capture it into `$TEST_KEY` for the verification
-//! curl commands in the README.
+//! Subcommands (passed as the first positional argument):
 //!
-//! Requires `DATABASE_URL` and `BLOB_ROOT` to be set the same way `awp-cloud`
-//! itself does.
+//! - *(default)* — 10k attestations under a fresh `seed@local.test` Team
+//!   account. Prints the API key to stdout exactly once. The default path
+//!   is what `make seed` calls.
+//! - `overage` — synthetic Team account with 1.05M attestation *usage*
+//!   counters in the current calendar month. Drives the Step 4 verification
+//!   command `make seed-overage`. We only bump the `usage` table — writing
+//!   1.05M real attestations would take minutes and is unnecessary; the
+//!   billing trigger reads usage counters, not raw rows.
+//! - `old-attestations` — 100 attestations dated 400 days ago under a
+//!   fresh `retention@local.test` Team account. Drives
+//!   `make seed-old-attestations`, paired with
+//!   `docker compose exec awp-cloud /usr/local/bin/sweeper run-once` in
+//!   the spec.
+//!
+//! Requires `DATABASE_URL` and (for the default mode) `BLOB_ROOT` to be set
+//! the same way `awp-cloud` itself does.
 
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::Context;
 use awp_core::{signing::AgentKeypair, Attestation, AttestationStatus};
-use chrono::Utc;
+use chrono::{Duration, Utc};
 
 use awp_cloud::auth::{generate_api_key, hash_api_key};
 use awp_cloud::blob::filesystem::FsBlobStore;
@@ -22,17 +33,31 @@ use awp_cloud::canonical::{blob_sha256, canonical_blob_bytes};
 use awp_cloud::store::postgres::PgDb;
 use awp_cloud::store::{AttestationIndex, Db, Plan};
 
-const SEED_COUNT: usize = 10_000;
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let database_url = std::env::var("DATABASE_URL").context("DATABASE_URL must be set")?;
     let blob_root: PathBuf = std::env::var("BLOB_ROOT")
         .unwrap_or_else(|_| "./data/blobs".to_string())
         .into();
-
     let db = PgDb::connect(&database_url, 8).await?;
     db.apply_migrations().await?;
+
+    let mode = std::env::args().nth(1).unwrap_or_else(|| "default".into());
+    match mode.as_str() {
+        "default" => seed_default(db, blob_root).await,
+        "overage" => seed_overage(db).await,
+        "old-attestations" => seed_old_attestations(db, blob_root).await,
+        other => {
+            anyhow::bail!(
+                "unknown seed subcommand `{other}`. expected one of: \
+                 default, overage, old-attestations"
+            );
+        }
+    }
+}
+
+async fn seed_default(db: PgDb, blob_root: PathBuf) -> anyhow::Result<()> {
+    const SEED_COUNT: usize = 10_000;
     let blob = FsBlobStore::new(&blob_root);
 
     let account = db.create_account("seed@local.test", Plan::Team).await?;
@@ -90,5 +115,99 @@ async fn main() -> anyhow::Result<()> {
         }
     }
     eprintln!("# done");
+    Ok(())
+}
+
+async fn seed_overage(db: PgDb) -> anyhow::Result<()> {
+    const OVERAGE_TOTAL: usize = 1_050_000;
+    let account = db.create_account("overage@local.test", Plan::Team).await?;
+    let cleartext = generate_api_key();
+    let phc = hash_api_key(&cleartext)?;
+    db.create_api_key(account.id, "overage-project", &phc)
+        .await?;
+
+    // Link a synthetic Stripe customer so the bill-period trigger has a
+    // subscription to charge against. The mock client doesn't care about
+    // realism here; the field just has to be populated for the bill-period
+    // code path to reach the metered post.
+    db.set_account_stripe_ids(account.id, "cus_synthetic_overage", Some("sub_synthetic"))
+        .await?;
+
+    let at = Utc::now();
+    println!("# AWP cloud seed (overage)");
+    println!("# account_id : {}", account.id);
+    println!("export TEST_KEY={cleartext}");
+    println!(
+        "# Recording {OVERAGE_TOTAL} usage points on {}...",
+        at.date_naive()
+    );
+
+    // `record_usage` is one row-modification per call; for 1.05M that's
+    // measurable but still under a minute on a local Postgres. We keep it
+    // honest (no bulk-fudging) so the bill-period code reads exactly what
+    // production would.
+    for i in 0..OVERAGE_TOTAL {
+        db.record_usage(account.id, at).await?;
+        if i % 50_000 == 0 && i > 0 {
+            eprintln!("# usage points recorded: {i}/{OVERAGE_TOTAL}");
+        }
+    }
+    eprintln!("# done. Expected overage: 50,000 attestations → 50 units of 1k.");
+    Ok(())
+}
+
+async fn seed_old_attestations(db: PgDb, blob_root: PathBuf) -> anyhow::Result<()> {
+    const STALE_COUNT: usize = 100;
+    let blob = FsBlobStore::new(&blob_root);
+
+    let account = db
+        .create_account("retention@local.test", Plan::Team)
+        .await?;
+    let cleartext = generate_api_key();
+    let phc = hash_api_key(&cleartext)?;
+    db.create_api_key(account.id, "retention-project", &phc)
+        .await?;
+    println!("# AWP cloud seed (old-attestations)");
+    println!("# account_id : {}", account.id);
+    println!("export TEST_KEY={cleartext}");
+    println!("# Inserting {STALE_COUNT} attestations dated 400 days ago...");
+
+    let kp = AgentKeypair::generate();
+    let stale_at = Utc::now() - Duration::days(400);
+
+    for i in 0..STALE_COUNT {
+        let customer_id = format!("STALE-{i:03}");
+        let task_hash = awp_core::signing::sha256(format!("stale-task-{i}").as_bytes());
+        let output = serde_json::json!({
+            "customer_id": customer_id,
+            "decision": "Approve",
+        })
+        .to_string();
+        let mut att = Attestation::new(
+            "agent-retention",
+            task_hash,
+            output,
+            AttestationStatus::Completed,
+            None,
+            stale_at.timestamp(),
+        );
+        kp.sign_attestation(&mut att);
+        let canonical = canonical_blob_bytes(&att);
+        let sha = hex::encode(blob_sha256(&canonical));
+        blob.put(&sha, &canonical).await?;
+        let index = AttestationIndex {
+            id: att.id,
+            account_id: account.id,
+            agent_id: att.agent_id.clone(),
+            agent_pubkey_hex: hex::encode(att.agent_pubkey),
+            customer_id: Some(customer_id),
+            received_at: stale_at,
+            blob_sha256_hex: sha,
+        };
+        db.insert_attestation(index).await?;
+    }
+    eprintln!(
+        "# done. Run `docker compose exec awp-cloud /usr/local/bin/sweeper run-once` to verify."
+    );
     Ok(())
 }
