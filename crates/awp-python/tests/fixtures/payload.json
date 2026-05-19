@@ -1,0 +1,15 @@
+{
+  "agent_id": "agent-vector",
+  "secret_seed_hex": "0707070707070707070707070707070707070707070707070707070707070707",
+  "attestation_id": "11111111-2222-4333-8444-555555555555",
+  "timestamp": 1700000000,
+  "payload": {
+    "z_field": "last alphabetically",
+    "amount_cents": 50000,
+    "action": "approve",
+    "nested": {
+      "y": true,
+      "a": [1, 2, 3]
+    }
+  }
+}
