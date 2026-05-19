@@ -4,6 +4,20 @@ A static, single-page landing site for AWP. Visual language modelled on heymya.a
 
 This is currently a thinking-tool for the founder (see `docs/LANDING.md` for the written-out version of the pitch). When GTM Month 1 starts (per `awp-market-research.md`), this becomes the draft for the public marketing site.
 
+## Positioning
+
+Three stacked frames, in order of abstraction:
+
+1. **Category claim (the layer):** *AWP — the trust layer for what AI agents do.* The extra phrase **what agents do** distinguishes AWP from identity-shaped "trust layer" products (Nuggets, Auth0 agent identity, agent passports), which answer *who is acting and is it allowed*. Used in `<title>`, hero eyebrow, "Where it fits" section, final CTA opener, footer tagline.
+2. **Mechanism (the proof):** *Cryptographic receipts for AI agents.* Stays as the H1 — the concrete, screenshot-friendly headline that grounds the abstract layer claim.
+3. **Jobs to be done:** *A signed, verifiable record of every task your agents complete — for audit, billing, and dispute resolution.* The subhead. Tells the buyer what problems get solved.
+
+The frames don't compete. "Trust layer for what agents do" sets the category the buyer is looking for and disambiguates it from identity products; "receipts" makes it tangible enough to demo; the subhead binds it to procurement pains. This is the same shape Stripe and Auth0 use (layer / product / job).
+
+### Competitive note
+
+Nuggets (nuggets.life) uses *"The Trust Layer for AI Agents & Humans"* and operates in the identity slot of the stack (KYC/KYB/KYM/KYA, IAM extension, verifiable credentials). AWP goes head-to-head on the category phrase but disambiguates on substance: identity attests to **who** acted; AWP attests to **what they did, signed at the moment they did it, re-verified by an independent agent.** The Worker–Verifier protocol — re-execution by a second agent — is the load-bearing differentiator and is not present in identity-shaped products. The Verifier section's headline (*"The verifier doesn't read the log. It re-runs the task."*) is the category claim that nuggets cannot mirror without rebuilding their product.
+
 ## How to view it
 
 ```bash
@@ -15,16 +29,17 @@ No build step. No `npm install`. Static HTML + CSS only.
 ## Sections
 
 1. **Sticky nav** with brand, in-page anchors, "Get a demo" pill button
-2. **Hero** — *"Cryptographic receipts for AI agents."* with bifurcated CTA ("Try it on your LangGraph agent" / "Talk to us about a pilot")
+2. **Hero** — eyebrow names the trust layer; H1 is *"Cryptographic receipts for AI agents."*; bifurcated CTA ("Try it on your LangGraph agent" / "Talk to us about a pilot")
 3. **Problem strip** — Sarah-shaped question + three stat callouts with cited sources
 4. **How it works** — three alternating feature blocks (Worker / Verifier / Audit) with monospace code-style visuals
 5. **See it work** — embedded mock audit-viewer card showing the KYC three-row demo with the tampered red row
-6. **Install** — `pip install awp-langgraph` code snippet alongside four "what you get" bullets; the developer's adoption surface
-7. **Who it's for** — three buyer cards (Compliance lead, Platform operator, Cross-party counterparty) each with a "Pay-for" section
-8. **Pricing** — three tiers (OSS, Team $499/mo, Enterprise "talk to us") with a "free to start, free to leave" footnote
-9. **What AWP is not** — four crossed-out scope-honest cards
-10. **Final CTA** — oversized headline + dual CTA mirroring the hero
-11. **Footer** — brand, product links, resources, company, legal
+6. **Where it fits (the stack)** — a 7-row stack diagram placing AWP (highlighted) between Observability and Payments; concretizes the trust-layer category claim
+7. **Install** — `pip install awp-langgraph` code snippet alongside four "what you get" bullets; the developer's adoption surface
+8. **Who it's for** — three buyer cards (Compliance lead, Platform operator, Cross-party counterparty) each with a "Pay-for" section
+9. **Pricing** — three tiers (OSS, Team $499/mo, Enterprise "talk to us") with a "free to start, free to leave" footnote
+10. **What AWP is not** — five crossed-out scope-honest cards (observability, correctness, on-chain, framework coverage, "general AI trust product")
+11. **Final CTA** — eyebrow restates the trust layer; oversized headline + dual CTA mirroring the hero
+12. **Footer** — brand ("the trust layer for AI agents"), product links, resources, company, legal
 
 ## Editing notes
 

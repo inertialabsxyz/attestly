@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AWP — Cryptographic receipts for AI agents</title>
-<meta name="description" content="A signed, verifiable record of every task your agents complete. For audit, billing, and dispute resolution.">
+<title>AWP — The trust layer for what AI agents do</title>
+<meta name="description" content="The trust layer for what AI agents do. A signed, verifiable record of every task your agents complete — for audit, billing, and dispute resolution. Identity tells you who acted; AWP tells you what they did.">
 <style>
 :root {
     --ink:        #0a0a0a;
@@ -294,6 +294,7 @@ section.solution p.lead {
     margin: 0 0 16px 0;
     max-width: 44ch;
 }
+.feature p strong { color: var(--paper); font-weight: 600; }
 .feature ul {
     list-style: none;
     padding: 0;
@@ -429,6 +430,87 @@ section.demo p.lead {
 }
 .demo-card .demo-badge.green { color: #2f7a3a; border-color: #2f7a3a; background: #ecf5ee; }
 .demo-card .demo-badge.red   { color: #a02020; border-color: #a02020; background: #f6e6e6; }
+
+/* ---------- stack ---------- */
+
+section.stack {
+    padding: 120px 0;
+    border-bottom: 1px solid var(--rule-soft);
+}
+section.stack .eyebrow {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    margin-bottom: 32px;
+}
+section.stack h2 {
+    font-size: clamp(40px, 5vw, 72px);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    margin: 0 0 24px 0;
+    max-width: 16ch;
+}
+section.stack h2 em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent);
+}
+section.stack p.lead {
+    font-size: 19px;
+    color: var(--muted);
+    max-width: 60ch;
+    margin: 0 0 64px 0;
+}
+.stack-diagram {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 760px;
+}
+.stack-row {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    align-items: center;
+    gap: 24px;
+    padding: 18px 24px;
+    border: 1px solid var(--rule-soft);
+    border-radius: 8px;
+    background: #0f0f0f;
+    font-size: 15px;
+    line-height: 1.4;
+}
+.stack-row .layer-name {
+    font-weight: 600;
+    color: var(--paper);
+    letter-spacing: -0.005em;
+}
+.stack-row .layer-players {
+    color: var(--muted);
+    font-size: 14px;
+}
+.stack-row.awp {
+    background: var(--accent);
+    color: var(--ink);
+    border-color: var(--accent);
+}
+.stack-row.awp .layer-name {
+    color: var(--ink);
+    font-weight: 700;
+}
+.stack-row.awp .layer-players {
+    color: rgba(10, 10, 10, 0.7);
+    font-weight: 500;
+}
+.stack-footnote {
+    margin-top: 36px;
+    font-size: 14px;
+    color: var(--muted);
+    max-width: 64ch;
+    line-height: 1.6;
+}
+.stack-footnote strong { color: var(--paper); font-weight: 500; }
 
 /* ---------- install ---------- */
 
@@ -888,6 +970,7 @@ footer .legal {
         padding: 48px 0;
     }
     .feature.reverse .feature-visual { order: 0; }
+    .stack-row { grid-template-columns: 1fr; gap: 4px; padding: 16px 20px; }
     .install-grid { grid-template-columns: 1fr; gap: 32px; }
     .price-grid { grid-template-columns: 1fr; }
     .buyer-grid { grid-template-columns: 1fr; }
@@ -904,6 +987,7 @@ footer .legal {
         <div class="brand">AWP<span class="dot">.</span></div>
         <nav class="links">
             <a href="#how-it-works">How it works</a>
+            <a href="#stack">The stack</a>
             <a href="#install">Install</a>
             <a href="#buyers">Who it's for</a>
             <a href="#pricing">Pricing</a>
@@ -915,7 +999,7 @@ footer .legal {
 
 <section class="hero">
     <div class="container">
-        <div class="eyebrow"><span class="dot"></span> Agent Work Protocol</div>
+        <div class="eyebrow"><span class="dot"></span> Agent Work Protocol · the trust layer for what agents do</div>
         <h1>Cryptographic <em>receipts</em> for AI agents.</h1>
         <p class="subhead">
             A signed, verifiable record of every task your agents complete —
@@ -973,6 +1057,11 @@ footer .legal {
                     Ed25519 signature binds the agent's identity, the task input, the output, and the
                     timestamp into one cryptographic claim. Tamper with any field — the signature breaks.
                 </p>
+                <p>
+                    <strong>The signing unit is the agent's output, not the agent's identity.</strong>
+                    Every decision produces its own receipt — not a per-session token, not a per-login
+                    credential. That's what makes the record evidentiary rather than circumstantial.
+                </p>
                 <ul>
                     <li>32-byte agent public key, identity stable across restarts</li>
                     <li>SHA-256 hashes pin both input and output</li>
@@ -997,10 +1086,15 @@ footer .legal {
         <div class="feature reverse">
             <div class="feature-copy">
                 <div class="feature-num">02 · VERIFIER</div>
-                <h3>A second agent independently checks the work.</h3>
+                <h3>The verifier doesn't read the log. It re-runs the task.</h3>
                 <p>
-                    The Verifier re-runs the task, validates the Worker's signature, and signs its own
-                    attestation recording its verdict. Disagreement is preserved as data, not hidden.
+                    A second, independently-identified agent executes the same task, validates the Worker's
+                    signature, and signs its own attestation recording its verdict. Disagreement is preserved
+                    as data, not hidden.
+                </p>
+                <p>
+                    <strong>This is the category claim.</strong> Identity products attest to who was
+                    allowed to act. AWP attests to <em>what they did</em> — and proves it by doing it again.
                 </p>
                 <ul>
                     <li>Two independent verdicts: signature valid, answer correct</li>
@@ -1107,6 +1201,59 @@ ROW 3 — <span class="bad">FLAG</span>    &nbsp; <span class="bad">✗ signatur
                 </tbody>
             </table>
         </div>
+    </div>
+</section>
+
+<section class="stack" id="stack">
+    <div class="container">
+        <div class="eyebrow">Where it fits</div>
+        <h2>The <em>trust layer</em> for AI agents.</h2>
+        <p class="lead">
+            The agent stack has names for almost every layer — except this one. Models, orchestration,
+            tool access, identity, observability, payments. The slot for "what did the agent actually do,
+            and can I prove it" was empty. AWP is that layer.
+        </p>
+        <div class="stack-diagram">
+            <div class="stack-row">
+                <div class="layer-name">Payments</div>
+                <div class="layer-players">Stripe Agent Toolkit · Skyfire · x402 · Visa/Mastercard agent rails</div>
+            </div>
+            <div class="stack-row awp">
+                <div class="layer-name">Trust — AWP</div>
+                <div class="layer-players">Signed receipts · Worker–Verifier verdicts · tamper-evident retention</div>
+            </div>
+            <div class="stack-row">
+                <div class="layer-name">Observability</div>
+                <div class="layer-players">LangSmith · Braintrust · Helicone · Arize · Langfuse</div>
+            </div>
+            <div class="stack-row">
+                <div class="layer-name">Identity</div>
+                <div class="layer-players">Auth0 / Okta agent identity · agent passports · DIDs</div>
+            </div>
+            <div class="stack-row">
+                <div class="layer-name">Tooling</div>
+                <div class="layer-players">MCP — the standard for agent ↔ tool wiring</div>
+            </div>
+            <div class="stack-row">
+                <div class="layer-name">Orchestration</div>
+                <div class="layer-players">LangGraph · CrewAI · AutoGen · Mastra · bespoke harnesses</div>
+            </div>
+            <div class="stack-row">
+                <div class="layer-name">Models</div>
+                <div class="layer-players">Anthropic · OpenAI · Google · open-weights</div>
+            </div>
+        </div>
+        <p class="stack-footnote">
+            <strong>A note on "trust layer."</strong> Some products call themselves the trust layer for
+            agents and live at the identity slot — answering <em>"who is this agent and is it allowed
+            to act."</em> AWP lives one layer down: <em>"what did the agent actually do, and is the
+            record intact."</em> Both layers are real. AWP is built for the second one.
+        </p>
+        <p class="stack-footnote" style="margin-top: 16px;">
+            <strong>Complementary, not competitive.</strong> Observability tools tell you what happened on
+            your infrastructure. AWP tells you what the agent <em>claimed</em>, signed at the source, and
+            proves the claim wasn't edited after the fact. Both belong in your stack.
+        </p>
     </div>
 </section>
 
@@ -1286,6 +1433,10 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
                 <p>AWP attests to what was claimed, not to whether the claim is right under your business rules. Model validation is your job; AWP makes the claims auditable.</p>
             </div>
             <div class="not-card">
+                <h4>Not a general "AI trust" product.</h4>
+                <p>The trust AWP provides is narrow and verifiable: <em>what the agent did, signed at the source, provably un-edited.</em> Not fairness, not alignment, not bias. That narrowness is why auditors accept it — and why we call it a trust <em>layer</em>, not a trust <em>solution</em>.</p>
+            </div>
+            <div class="not-card">
                 <h4>Not on-chain AI.</h4>
                 <p>Optional Merkle root anchoring exists for cross-party networks. Most buyers will never anchor anything on a chain — the protocol works without one.</p>
             </div>
@@ -1299,10 +1450,11 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
 
 <section class="final" id="final">
     <div class="container">
+        <div class="eyebrow" style="text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted); font-size: 13px; margin-bottom: 24px;">The trust layer for what AI agents do</div>
         <h2>Receipts your auditor <em>will accept.</em></h2>
         <p>
-            Install the SDK and produce your first signed receipt in five minutes — or book a pilot
-            conversation and bring your compliance lead.
+            Identity tells you who acted. AWP tells you what they did — and proves it by doing it again.<br>
+            Install the SDK and produce your first signed receipt in five minutes, or book a pilot conversation and bring your compliance lead.
         </p>
         <div class="hero-ctas" style="justify-content: center;">
             <a href="#install" class="btn-primary">Try it on your LangGraph agent</a>
@@ -1316,7 +1468,7 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
         <div class="footer-grid">
             <div class="footer-brand">
                 <h4>AWP<span class="dot">.</span></h4>
-                <p>Cryptographic receipts for AI agents. Built by Inertia Labs.</p>
+                <p>The trust layer for what AI agents do. Built by Inertia Labs.</p>
             </div>
             <div class="footer-col">
                 <h5>Product</h5>
