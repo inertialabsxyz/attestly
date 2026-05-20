@@ -383,6 +383,16 @@ def _emit_for_node(
     verifier_output_hash_hex = _stable_hash(verifier_output)
     outputs_agree = verifier_output_hash_hex == worker_output_hash_hex
 
+    # The Verifier cryptographically re-verifies the Worker's attestation
+    # rather than assuming it is valid — `attestation_valid` is a real
+    # verdict, not a placeholder.
+    try:
+        attestation_valid = bool(
+            _awp_core.verify_attestation(worker_att, worker_att.agent_pubkey)
+        )
+    except Exception:  # pragma: no cover - defensive; verify shouldn't raise
+        attestation_valid = False
+
     verifier_payload = {
         "node_name": node_name,
         "input_hash": input_hash_hex,
@@ -394,7 +404,7 @@ def _emit_for_node(
         # awp-core-py v0.1 only emits Completed; the audit trail records
         # the verdict via these two keys instead.
         "references": worker_att.id,
-        "attestation_valid": True,
+        "attestation_valid": attestation_valid,
         "answer_correct": outputs_agree,
     }
     verifier_att = _awp_core.sign_attestation(
