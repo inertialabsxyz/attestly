@@ -15,7 +15,7 @@ use std::str::FromStr;
 use async_trait::async_trait;
 use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::postgres::{PgPool, PgPoolOptions};
-use sqlx::Row;
+use sqlx::{Executor, Row};
 use uuid::Uuid;
 
 use crate::error::ApiError;
@@ -53,9 +53,13 @@ impl PgDb {
     /// We embed the migration text via `include_str!` rather than reading the
     /// filesystem at runtime, so a binary deploy carries its own schema.
     pub async fn apply_migrations(&self) -> Result<(), ApiError> {
+        // Each migration file holds multiple statements. `Executor::execute`
+        // with a raw `&str` uses Postgres' simple-query protocol, which allows
+        // that; `sqlx::query(..)` would route through a prepared statement and
+        // fail with "cannot insert multiple commands into a prepared statement".
         for (name, sql) in MIGRATIONS {
-            sqlx::query(sql)
-                .execute(&self.pool)
+            self.pool
+                .execute(*sql)
                 .await
                 .map_err(|e| ApiError::Internal(format!("apply migration {name}: {e}")))?;
         }
