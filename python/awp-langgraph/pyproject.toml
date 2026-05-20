@@ -28,10 +28,16 @@ classifiers = [
     "Topic :: Security :: Cryptography",
 ]
 
-# Runtime deps are intentionally minimal: the telemetry module uses only the
-# standard library (urllib) so the SDK can be installed in environments that
-# disallow extra HTTP clients. The full SDK (Step 3) will add awp-core-py
-# and langgraph as required dependencies.
+# Runtime deps.
+#   awp-core-py — Step 1 PyO3 bindings; provides Attestation, AgentIdentity,
+#     sign_attestation, verify_attestation. The SDK never re-implements
+#     signing; the byte-identity guarantee with Rust comes from here.
+#   langgraph    — Step 3 wraps StateGraph nodes, so the SDK fails fast on
+#     install if the user does not also have LangGraph available.
+dependencies = [
+    "awp-core-py>=0.1",
+    "langgraph>=0.2",
+]
 
 [project.optional-dependencies]
 test = ["pytest>=8.0"]
@@ -46,3 +52,7 @@ packages = ["awp"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Include bench_*.py so the Phase 2 <10ms-per-node budget check runs as part
+# of `make check`. Without this pytest only collects the default test_*.py
+# pattern and the benchmark assertions would silently skip.
+python_files = ["test_*.py", "bench_*.py"]

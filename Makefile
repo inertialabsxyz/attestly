@@ -40,7 +40,7 @@ check-python: python-build python-test python-test-langgraph
 python-build:
 	@test -d $(PY_VENV) || python3 -m venv $(PY_VENV)
 	$(PY_VENV_BIN)/pip install --quiet --upgrade pip
-	$(PY_VENV_BIN)/pip install --quiet maturin pytest
+	$(PY_VENV_BIN)/pip install --quiet maturin pytest langgraph
 	cargo build -p awp-core --bin awp-verify --release
 	cd crates/awp-python && ../../$(PY_VENV_BIN)/maturin develop --release --quiet
 
@@ -49,8 +49,9 @@ python-test:
 
 # `awp-langgraph` is a pure-Python package that lives outside the maturin
 # build. We run its pytest with the package directory on PYTHONPATH so the
-# check works against the in-tree source without needing a separate install
-# step. This also keeps the gate green even before the package is published.
+# check works against the in-tree source without a separate install step.
+# It imports `awp` (provided by the `maturin develop` step above) and
+# `langgraph` (installed by `python-build`).
 python-test-langgraph:
 	PYTHONPATH=python/awp-langgraph $(PY_VENV_BIN)/python -m pytest python/awp-langgraph/tests -v
 

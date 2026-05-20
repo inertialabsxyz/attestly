@@ -7,6 +7,12 @@ executions.json
 # awp-cloud local dev outputs
 services/awp-cloud/data/
 
+# Runtime outputs (identity secrets, attestation logs) produced inside a
+# Python package directory when an example is run from there.
+python/**/data/
+python/**/dist/
+python/**/*.egg-info/
+
 # Python tooling
 .venv/
 __pycache__/
