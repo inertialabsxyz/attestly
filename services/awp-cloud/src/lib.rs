@@ -51,12 +51,14 @@ pub mod web;
 
 pub use state::{AppState, BillingConfig};
 
+use axum::response::Redirect;
 use axum::routing::{delete, get, post};
 use axum::Router;
 
 /// Build the application router from a fully-constructed [`AppState`].
 pub fn router(state: AppState) -> Router {
     Router::new()
+        .route("/", get(|| async { Redirect::permanent("/dashboard") }))
         .route("/healthz", get(handlers::health::healthz))
         .route("/v1/attestations", post(handlers::attestations::ingest))
         .route("/v1/attestations", get(handlers::attestations::search))
