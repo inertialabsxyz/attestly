@@ -115,18 +115,47 @@ pub fn dashboard_html() -> String {
 <title>AWP Cloud — Dashboard</title>
 <link rel="stylesheet" href="/static/viewer.css">
 <style>
-  .panel { border: 1px solid #2a2a2a; border-radius: 8px; padding: 18px; margin: 18px 0; }
+  /* The dashboard reuses viewer.css's light "paper" palette — no separate
+     dark theme. Everything below derives from the shared :root variables. */
+  .panel {
+    background: var(--paper-card);
+    border: 1px solid var(--rule);
+    padding: 18px;
+    margin: 18px 0;
+  }
   .row { display: flex; gap: 16px; align-items: baseline; margin: 6px 0; }
-  .row .label { color: #8a8680; min-width: 180px; }
+  .row .label { color: var(--ink-faint); min-width: 180px; }
   .row .val { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
   .keys table { width: 100%; border-collapse: collapse; }
-  .keys th, .keys td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #2a2a2a; font-size: 14px; }
-  .btn { background: #d9ff3d; color: #0a0a0a; padding: 8px 14px; border-radius: 999px; border: none; cursor: pointer; font-weight: 600; }
-  .btn.secondary { background: transparent; color: inherit; border: 1px solid #2a2a2a; }
-  .danger { color: #ff6b6b; }
+  .keys th, .keys td {
+    text-align: left; padding: 8px 6px;
+    border-bottom: 1px solid var(--rule); font-size: 14px;
+  }
+  .btn {
+    background: var(--ink); color: var(--paper-card);
+    padding: 8px 14px; border: 1px solid var(--ink);
+    cursor: pointer; font-weight: 600; font-size: 13px;
+  }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn.secondary { background: transparent; color: var(--ink); }
+  .danger { color: var(--red); }
   .chart { display: flex; gap: 2px; align-items: flex-end; height: 80px; margin-top: 8px; }
-  .chart .bar { background: #d9ff3d; width: 12px; }
-  .welcome { background: #1c2410; border: 1px solid #d9ff3d; padding: 14px 18px; border-radius: 8px; margin: 18px 0; }
+  .chart .bar { background: var(--ink); width: 12px; }
+  .field {
+    padding: 8px; background: var(--paper-card); color: var(--ink);
+    border: 1px solid var(--rule); font-size: 14px;
+  }
+  .notice {
+    background: var(--paper-card); border: 1px solid var(--rule);
+    border-left: 3px solid var(--ink); padding: 14px 18px; margin: 18px 0;
+  }
+  .notice code {
+    display: block; padding: 10px; margin-top: 6px;
+    background: #f4f1ea; word-break: break-all;
+  }
+  .msg { font-size: 13px; min-height: 18px; margin-top: 8px; }
+  .msg.error { color: var(--red); }
+  .msg.ok { color: var(--green); }
 </style>
 </head>
 <body>
@@ -136,23 +165,26 @@ pub fn dashboard_html() -> String {
 </header>
 
 <main>
-  <div id="welcome" class="welcome" style="display:none">
+  <div id="welcome" class="notice" style="display:none">
     <strong>Account ready.</strong>
     Your API key is shown once on first sign-in. Paste it below to load the dashboard,
     then store it in your secrets manager. We cannot recover it later.
     <div class="row" style="margin-top:10px">
-      <input id="key-input" type="text" placeholder="x-api-key" style="flex:1; padding:8px; background:#0a0a0a; color:#f5f3ef; border:1px solid #2a2a2a; border-radius:4px"/>
-      <button class="btn" onclick="saveKey()">Load dashboard</button>
+      <input id="key-input" type="text" placeholder="x-api-key" class="field" style="flex:1"/>
+      <button class="btn" id="load-btn" onclick="saveKey()">Load dashboard</button>
     </div>
+    <div id="welcome-msg" class="msg"></div>
   </div>
 
+  <div id="dashboard" style="display:none">
   <section class="panel" id="plan-panel">
     <h2>Plan</h2>
     <div id="plan-rows"></div>
     <div style="margin-top:14px">
       <button class="btn" onclick="openPortal()">Manage subscription</button>
-      <a class="btn secondary" href="#" onclick="downloadExport(); return false">Export everything (JSONL)</a>
+      <button class="btn secondary" onclick="downloadExport()">Export everything (JSONL)</button>
     </div>
+    <div id="plan-msg" class="msg"></div>
   </section>
 
   <section class="panel" id="usage-panel">
@@ -168,104 +200,199 @@ pub fn dashboard_html() -> String {
       <tbody id="keys-body"></tbody>
     </table>
     <div style="margin-top:14px">
-      <input id="new-key-name" placeholder="project-name" style="padding:8px; background:#0a0a0a; color:#f5f3ef; border:1px solid #2a2a2a; border-radius:4px"/>
+      <input id="new-key-name" placeholder="project-name" class="field"/>
       <button class="btn" onclick="createKey()">Create key</button>
     </div>
-    <div id="new-key-banner" class="welcome" style="display:none; margin-top:14px"></div>
+    <div id="keys-msg" class="msg"></div>
+    <div id="new-key-banner" class="notice" style="display:none; margin-top:14px"></div>
   </section>
+  </div>
 </main>
 
 <script>
 const KEY_STORAGE = 'awp-cloud-api-key';
 function getKey() { return localStorage.getItem(KEY_STORAGE) || ''; }
-function saveKey() {
-  const v = document.getElementById('key-input').value.trim();
-  if (!v) return;
-  localStorage.setItem(KEY_STORAGE, v);
-  document.getElementById('welcome').style.display = 'none';
-  loadAll();
+function esc(s) { return String(s).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+function showMsg(id, text, kind) {
+  const el = document.getElementById(id);
+  el.textContent = text || '';
+  el.className = 'msg' + (text ? ' ' + (kind || 'error') : '');
+}
+
+/// Error thrown by `api()` when the server returns a non-2xx status, carrying
+/// the server's `detail` so callers can surface a real message.
+class ApiError extends Error {
+  constructor(status, detail) { super(detail); this.status = status; }
 }
 async function api(method, path, body) {
   const headers = { 'x-api-key': getKey() };
   if (body) headers['content-type'] = 'application/json';
   const r = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
   if (r.status === 204) return null;
-  return r.json();
+  let payload = null;
+  try { payload = await r.json(); } catch (_) { /* non-JSON body */ }
+  if (!r.ok) {
+    const detail = (payload && (payload.detail || payload.error)) || ('HTTP ' + r.status);
+    throw new ApiError(r.status, detail);
+  }
+  return payload;
 }
+
+async function saveKey() {
+  const v = document.getElementById('key-input').value.trim();
+  if (!v) { showMsg('welcome-msg', 'Paste your x-api-key first.'); return; }
+  const btn = document.getElementById('load-btn');
+  btn.disabled = true;
+  showMsg('welcome-msg', '');
+  // Validate the key against /v1/account before committing it to storage —
+  // otherwise a bad key gets saved and every panel fails silently.
+  localStorage.setItem(KEY_STORAGE, v);
+  try {
+    await api('GET', '/v1/account');
+  } catch (e) {
+    localStorage.removeItem(KEY_STORAGE);
+    btn.disabled = false;
+    showMsg('welcome-msg', e.status === 401
+      ? 'That key was not accepted. Check it and try again.'
+      : ('Could not load the dashboard: ' + e.message));
+    return;
+  }
+  document.getElementById('welcome').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  loadAll();
+}
+
 async function loadAll() {
-  if (!getKey()) { document.getElementById('welcome').style.display = 'block'; return; }
+  if (!getKey()) { showWelcome(); return; }
+  document.getElementById('dashboard').style.display = 'block';
   await Promise.all([loadPlan(), loadUsage(), loadKeys()]);
 }
+function showWelcome() {
+  document.getElementById('welcome').style.display = 'block';
+  document.getElementById('dashboard').style.display = 'none';
+}
+
 async function loadPlan() {
-  const a = await api('GET', '/v1/account');
-  const rows = [
-    ['Email', a.email],
-    ['Plan', a.plan],
-    ['Retention', a.retention_days + ' days'],
-    ['Included', a.included_attestations.toLocaleString() + ' attestations / period'],
-    ['Used this period', (a.usage_this_period || 0).toLocaleString()],
-    ['Stripe customer', a.stripe_customer_id || '(none)'],
-  ];
-  document.getElementById('plan-rows').innerHTML = rows
-    .map(([k, v]) => `<div class="row"><span class="label">${k}</span><span class="val">${v}</span></div>`).join('');
+  try {
+    const a = await api('GET', '/v1/account');
+    const rows = [
+      ['Email', a.email],
+      ['Plan', a.plan],
+      ['Retention', a.retention_days + ' days'],
+      ['Included', a.included_attestations.toLocaleString() + ' attestations / period'],
+      ['Used this period', (a.usage_this_period || 0).toLocaleString()],
+      ['Stripe customer', a.stripe_customer_id || '(none)'],
+    ];
+    document.getElementById('plan-rows').innerHTML = rows
+      .map(([k, v]) => `<div class="row"><span class="label">${esc(k)}</span><span class="val">${esc(v)}</span></div>`).join('');
+  } catch (e) {
+    showMsg('plan-msg', 'Could not load plan: ' + e.message);
+  }
 }
 async function loadUsage() {
-  const u = await api('GET', '/v1/account/usage');
-  const total = u.points.reduce((s, p) => s + p.count, 0);
-  document.getElementById('usage-total').textContent = total.toLocaleString() + ' attestations';
-  const max = Math.max(1, ...u.points.map(p => p.count));
-  const chart = document.getElementById('usage-chart');
-  chart.innerHTML = u.points.map(p => {
-    const h = Math.max(2, Math.round((p.count / max) * 78));
-    return `<div class="bar" title="${p.day}: ${p.count}" style="height:${h}px"></div>`;
-  }).join('');
+  try {
+    const u = await api('GET', '/v1/account/usage');
+    const total = u.points.reduce((s, p) => s + p.count, 0);
+    document.getElementById('usage-total').textContent = total.toLocaleString() + ' attestations';
+    const max = Math.max(1, ...u.points.map(p => p.count));
+    const chart = document.getElementById('usage-chart');
+    chart.innerHTML = u.points.map(p => {
+      const h = Math.max(2, Math.round((p.count / max) * 78));
+      return `<div class="bar" title="${esc(p.day)}: ${esc(p.count)}" style="height:${h}px"></div>`;
+    }).join('');
+  } catch (e) {
+    document.getElementById('usage-total').textContent = 'Could not load usage: ' + e.message;
+  }
 }
 async function loadKeys() {
-  const keys = await api('GET', '/v1/account/api-keys');
-  const tbody = document.getElementById('keys-body');
-  tbody.innerHTML = keys.map(k => `
-    <tr>
-      <td>${k.project_name}</td>
-      <td>${new Date(k.created_at).toLocaleDateString()}</td>
-      <td><code>${k.id}</code></td>
-      <td><button class="btn secondary" onclick="revokeKey('${k.id}')">Revoke</button></td>
-    </tr>
-  `).join('');
+  try {
+    const keys = await api('GET', '/v1/account/api-keys');
+    const tbody = document.getElementById('keys-body');
+    tbody.innerHTML = keys.map(k => `
+      <tr>
+        <td>${esc(k.project_name)}</td>
+        <td>${new Date(k.created_at).toLocaleDateString()}</td>
+        <td><code>${esc(k.id)}</code></td>
+        <td><button class="btn secondary" onclick="revokeKey('${esc(k.id)}')">Revoke</button></td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    showMsg('keys-msg', 'Could not load API keys: ' + e.message);
+  }
 }
 async function createKey() {
   const name = document.getElementById('new-key-name').value.trim();
-  if (!name) return;
-  const r = await api('POST', '/v1/account/api-keys', { project_name: name });
+  if (!name) { showMsg('keys-msg', 'Enter a project name first.'); return; }
+  showMsg('keys-msg', '');
+  let r;
+  try {
+    r = await api('POST', '/v1/account/api-keys', { project_name: name });
+  } catch (e) {
+    showMsg('keys-msg', 'Could not create key: ' + e.message);
+    return;
+  }
   const banner = document.getElementById('new-key-banner');
   banner.style.display = 'block';
-  banner.innerHTML = `<strong>New API key</strong> for project <code>${r.project_name}</code><br>
+  banner.innerHTML = `<strong>New API key</strong> for project <code style="display:inline; padding:1px 4px">${esc(r.project_name)}</code><br>
     Copy this now — it will not be shown again:<br>
-    <code style="display:block; padding:10px; margin-top:6px; background:#0a0a0a; border-radius:4px">${r.key}</code>`;
+    <code>${esc(r.key)}</code>`;
+  document.getElementById('new-key-name').value = '';
   await loadKeys();
 }
 async function revokeKey(id) {
   if (!confirm('Revoke this key? Existing requests with it will fail.')) return;
-  await fetch('/v1/account/api-keys/' + id, { method: 'DELETE', headers: { 'x-api-key': getKey() } });
+  try {
+    await api('DELETE', '/v1/account/api-keys/' + id);
+  } catch (e) {
+    showMsg('keys-msg', 'Could not revoke key: ' + e.message);
+    return;
+  }
   await loadKeys();
 }
 async function openPortal() {
-  const r = await api('POST', '/v1/billing/portal');
-  if (r && r.url) window.location = r.url;
+  try {
+    const r = await api('POST', '/v1/billing/portal');
+    if (r && r.url) {
+      window.location = r.url;
+    } else {
+      showMsg('plan-msg', 'Billing portal is unavailable for this account.');
+    }
+  } catch (e) {
+    showMsg('plan-msg', 'Could not open the billing portal: ' + e.message);
+  }
 }
-function downloadExport() {
-  const url = '/v1/export';
-  fetch(url, { headers: { 'x-api-key': getKey() } })
-    .then(r => r.blob())
-    .then(b => {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(b);
-      a.download = 'awp-attestations.jsonl';
-      a.click();
-    });
+async function downloadExport() {
+  showMsg('plan-msg', 'Preparing export…', 'ok');
+  try {
+    const r = await fetch('/v1/export', { headers: { 'x-api-key': getKey() } });
+    if (!r.ok) {
+      let detail = 'HTTP ' + r.status;
+      try { const b = await r.json(); detail = b.detail || b.error || detail; } catch (_) {}
+      showMsg('plan-msg', 'Export failed: ' + detail);
+      return;
+    }
+    const b = await r.blob();
+    const url = URL.createObjectURL(b);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'awp-attestations.jsonl';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Revoke after a tick — revoking synchronously after click() can cancel
+    // the download in some browsers before it has started.
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    showMsg('plan-msg', 'Export downloaded.', 'ok');
+  } catch (e) {
+    showMsg('plan-msg', 'Export failed: ' + e.message);
+  }
 }
+
 const params = new URLSearchParams(window.location.search);
 if (params.get('welcome') === '1' && !getKey()) {
-  document.getElementById('welcome').style.display = 'block';
+  showWelcome();
+} else if (!getKey()) {
+  showWelcome();
 } else {
   loadAll();
 }

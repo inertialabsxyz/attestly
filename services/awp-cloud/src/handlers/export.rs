@@ -53,7 +53,13 @@ pub async fn stream(
     let body = Body::from_stream(stream);
     Ok((
         StatusCode::OK,
-        [(header::CONTENT_TYPE, "application/x-ndjson")],
+        [
+            (header::CONTENT_TYPE, "application/x-ndjson"),
+            (
+                header::CONTENT_DISPOSITION,
+                "attachment; filename=\"awp-attestations.jsonl\"",
+            ),
+        ],
         body,
     ))
 }

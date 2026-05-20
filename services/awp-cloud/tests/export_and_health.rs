@@ -42,6 +42,15 @@ async fn export_streams_all_account_attestations_as_jsonl() {
         .to_str()
         .unwrap();
     assert_eq!(ct, "application/x-ndjson");
+    // The browser dashboard relies on this header to treat the stream as a
+    // file download rather than navigating to it.
+    let cd = resp
+        .headers()
+        .get(axum::http::header::CONTENT_DISPOSITION)
+        .unwrap()
+        .to_str()
+        .unwrap();
+    assert_eq!(cd, "attachment; filename=\"awp-attestations.jsonl\"");
 
     let (_, text) = body_text(resp).await;
     let lines: Vec<&str> = text.lines().filter(|l| !l.is_empty()).collect();

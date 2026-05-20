@@ -28,7 +28,7 @@ logs:
 	docker compose logs -f awp-cloud
 
 # Insert 10k synthetic attestations for hand-testing. Prints the API key on
-# stdout; capture it into `$$TEST_KEY` for the curl commands in the README.
+# stdout; capture it into `$$AWP_API_KEY` for the curl commands in the README.
 seed:
 	docker compose exec awp-cloud /usr/local/bin/awp-cloud-seed
 

@@ -79,7 +79,7 @@ async fn seed_default(db: PgDb, blob_root: PathBuf) -> anyhow::Result<()> {
 
     println!("# AWP cloud seed");
     println!("# account_id : {}", account.id);
-    println!("export TEST_KEY={cleartext}");
+    println!("export AWP_API_KEY={cleartext}");
     println!("# Inserting {SEED_COUNT} attestations...");
 
     let kp = AgentKeypair::generate();
@@ -148,7 +148,7 @@ async fn seed_overage(db: PgDb) -> anyhow::Result<()> {
     let at = Utc::now();
     println!("# AWP cloud seed (overage)");
     println!("# account_id : {}", account.id);
-    println!("export TEST_KEY={cleartext}");
+    println!("export AWP_API_KEY={cleartext}");
     println!(
         "# Recording {OVERAGE_TOTAL} usage points on {}...",
         at.date_naive()
@@ -179,7 +179,7 @@ async fn seed_old_attestations(db: PgDb, blob_root: PathBuf) -> anyhow::Result<(
         .await?;
     println!("# AWP cloud seed (old-attestations)");
     println!("# account_id : {}", account.id);
-    println!("export TEST_KEY={cleartext}");
+    println!("export AWP_API_KEY={cleartext}");
     println!("# Inserting {STALE_COUNT} attestations dated 400 days ago...");
 
     let kp = AgentKeypair::generate();
