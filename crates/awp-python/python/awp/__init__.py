@@ -11,7 +11,14 @@ All canonical encoding happens in the underlying Rust extension so that
 Python-signed attestations verify byte-identically in Rust (and vice
 versa). See the README for the cross-language signing guarantee and the
 fixed-seed test vector that pins it.
+
+``awp`` is shared with the ``awp-langgraph`` distribution, which adds the
+``awp.langgraph`` subpackage. Extending ``__path__`` here lets that
+subpackage be discovered even though this distribution owns ``awp`` as a
+regular package with its own public API.
 """
+
+__path__ = __import__("pkgutil").extend_path(__path__, __name__)
 
 from ._native import (  # type: ignore[attr-defined]
     AgentIdentity,

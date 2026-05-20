@@ -48,7 +48,12 @@ Repository = "https://github.com/inertialabsxyz/awp"
 Documentation = "https://docs.awp-cloud.xyz"
 
 [tool.hatch.build.targets.wheel]
-packages = ["awp"]
+# `awp` is a namespace package shared with the `awp-core-py` distribution
+# (which owns `awp/__init__.py` and the C-extension). This distribution
+# ships only the `awp.langgraph` subpackage — it must not include an
+# `awp/__init__.py`, or it would shadow the core package's public API.
+only-include = ["awp/langgraph"]
+sources = ["."]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

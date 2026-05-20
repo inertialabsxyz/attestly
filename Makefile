@@ -47,13 +47,15 @@ python-build:
 python-test:
 	$(PY_VENV_BIN)/python -m pytest crates/awp-python/tests -v
 
-# `awp-langgraph` is a pure-Python package that lives outside the maturin
-# build. We run its pytest with the package directory on PYTHONPATH so the
-# check works against the in-tree source without a separate install step.
-# It imports `awp` (provided by the `maturin develop` step above) and
-# `langgraph` (installed by `python-build`).
+# `awp-langgraph` is a pure-Python package that shares the `awp` namespace
+# package with `awp-core-py`. It must be installed (editable) rather than
+# put on PYTHONPATH: it ships no `awp/__init__.py`, so a raw PYTHONPATH
+# entry would not merge into the `awp` package that `maturin develop`
+# installed. `--no-deps` skips awp-core-py (already built above) and
+# langgraph (installed by `python-build`).
 python-test-langgraph:
-	PYTHONPATH=python/awp-langgraph $(PY_VENV_BIN)/python -m pytest python/awp-langgraph/tests -v
+	$(PY_VENV_BIN)/pip install --quiet --no-deps -e python/awp-langgraph
+	$(PY_VENV_BIN)/python -m pytest python/awp-langgraph/tests -v
 
 fix:
 	cargo fmt --all
