@@ -154,17 +154,18 @@ With opt-out set, the SDK makes zero network calls to the telemetry
 endpoint — there's a test asserting this in the package's own
 `tests/test_telemetry.py`.
 
-## Runnable example
+## Runnable examples
 
-The package ships `examples/quickstart_snippet.py` — the same five
-lines the [Quickstart](quickstart.md) walks through, with a placeholder
-`build_my_graph` you can replace with your own.
+The package ships two runnable examples:
 
-A full KYC graph is the deliverable of Step 3
-([`planning/gtm-phase-2-agent-prompts.md`](https://github.com/inertialabsxyz/awp/blob/main/planning/gtm-phase-2-agent-prompts.md));
-until then the Rust `kyc_receipts` example exercises the same protocol
-end-to-end and the receipts it produces verify against the in-browser
-viewer byte-for-byte.
+- `examples/quickstart_snippet.py` — the same five lines the
+  [Quickstart](quickstart.md) walks through, wrapping a minimal one-node
+  `StateGraph`. Runs against `CloudSink` when `AWP_API_KEY` is set, and
+  falls back to `FileSink` otherwise so it works offline.
+- `examples/kyc_graph.py` — a full KYC graph with three scenarios
+  (Approve, Flag, and a dual-agent disagreement), the LangGraph port of
+  the GTM Phase 1 `kyc_receipts` demo. The receipts it produces verify
+  against the in-browser audit viewer byte-for-byte.
 
 ## Status
 
