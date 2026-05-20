@@ -3,19 +3,34 @@
 **Signed attestations for AI agent work.**
 
 AWP is a minimal protocol for AI agents to produce cryptographically
-signed attestations of completed work, with optional on-chain anchoring
-for coordination and settlement.
+signed attestations of completed work. It is designed to support
+optional on-chain anchoring for coordination and settlement — that
+anchoring is a roadmap item, not yet implemented (see [Roadmap](#roadmap)).
 
 When agents work on your behalf, you need receipts — not just results.
 
 ## Install
 
-The LangGraph SDK is published to **TestPyPI** while GTM Phase 2 is in
-progress (promotion to `pypi.org` is gated on the first design-partner
-close):
+The LangGraph SDK is not yet published to a package index — install it
+from this repository. It sits on `awp-core-py`, the PyO3 bindings to the
+Rust signing core, which you build locally with
+[`maturin`](https://www.maturin.rs):
 
 ```bash
-pip install --index-url https://test.pypi.org/simple/ awp-langgraph
+git clone https://github.com/inertialabsxyz/awp
+cd awp
+
+python -m venv .venv && source .venv/bin/activate
+pip install --upgrade pip   # editable installs need pip >= 21.3
+pip install maturin
+
+# Build the Rust signing core into the venv as `awp-core-py`.
+maturin develop --manifest-path crates/awp-python/Cargo.toml --release
+
+# Install the LangGraph SDK in editable mode (--no-deps: awp-core-py is
+# already built above; langgraph is installed on the next line).
+pip install --no-deps -e python/awp-langgraph
+pip install langgraph
 ```
 
 Then wrap any LangGraph `StateGraph` in one line:
@@ -24,7 +39,7 @@ Then wrap any LangGraph `StateGraph` in one line:
 from awp.langgraph import attest
 from langgraph.graph import StateGraph
 
-graph = build_my_graph()
+graph = build_my_graph()                       # your existing StateGraph
 graph = attest(graph, agent_id="my-agent-01")
 graph.compile().invoke({"hello": "world"})
 ```
@@ -43,29 +58,6 @@ compliance pointers) lives under [`docs/site/`](docs/site/).
 To see the whole protocol working end-to-end, follow the presenter
 runbook in [`docs/DEMO.md`](docs/DEMO.md).
 
-## Status
-
-GTM Phase 2 — SDK wedge and paid conversion. Shipped to `main`:
-
-- **PyO3 bindings** ([`crates/awp-python/`](crates/awp-python/)) —
-  the Rust signing core exposed to Python as `awp-core-py`, with a
-  byte-identical-signature guarantee across Rust and Python.
-- **`awp-cloud`** ([`services/awp-cloud/`](services/awp-cloud/)) —
-  hosted ingest, search, share-links, account dashboard, Stripe
-  billing, and a retention sweeper. Rust + Axum + Postgres.
-- **LangGraph SDK** ([`python/awp-langgraph/`](python/awp-langgraph/)) —
-  the one-line `attest()` wrapper, `FileSink` / `CloudSink` /
-  `CallableSink`, dual-agent mode, and anonymous telemetry.
-- **Documentation site** ([`docs/site/`](docs/site/)) and public
-  pricing on the landing page.
-
-Remaining for the phase: the LangSmith metadata integration and the
-first design-partner close. See
-[`planning/gtm-phase-2-plan.md`](planning/gtm-phase-2-plan.md) for the
-full sequencing and
-[`planning/gtm-phase-2-agent-prompts.md`](planning/gtm-phase-2-agent-prompts.md)
-for the per-step dispatch prompts.
-
 ## Core idea
 
 Every task produces a signed attestation linking the agent's identity,
@@ -83,21 +75,36 @@ Attestation {
 ```
 
 A second agent independently verifies. Attestations batch into Merkle
-trees; roots can anchor on-chain so multiple parties can verify
-inclusion without trusting a central server.
+trees, and each batch carries reserved `anchor_tx` / `anchor_chain`
+fields: once on-chain anchoring lands, a root can be published so
+multiple parties verify inclusion without trusting a central server.
+Today the Merkle batching and inclusion proofs are real and local; the
+anchoring step is not yet built.
 
 ## Design principles
 
-- **Blockchain only where necessary.** Computation stays off-chain.
+- **Blockchain only where necessary.** Computation stays off-chain;
+  anchoring, when added, carries only Merkle roots.
 - **No abstraction without example.** Every protocol element maps to a
   concrete use case.
-- **Graceful degradation.** Functional when the chain is unavailable.
+- **Graceful degradation.** Fully functional with no chain at all —
+  on-chain anchoring is additive, never a dependency.
 - **Identity over keys.** Stable identity across key rotations, with
   lineage and operator accountability.
 
 ## What AWP is not
 
 Not a token. Not a DAO. Not on-chain AI. Not a reputation score.
+
+## Roadmap
+
+On-chain anchoring is the headline not-yet-built capability: the Merkle
+batch type already reserves `anchor_tx` / `anchor_chain` fields, but no
+chain is wired in. It is explicitly out of scope for the current GTM
+phase and revisited later. Near-term work tracks the GTM Phase 2 plan
+([`planning/gtm-phase-2-plan.md`](planning/gtm-phase-2-plan.md)) — the
+SDK wedge and hosted service are in; the LangSmith integration and the
+first design-partner close are the remaining items.
 
 ## Stack
 
