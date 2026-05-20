@@ -100,11 +100,8 @@ Not a token. Not a DAO. Not on-chain AI. Not a reputation score.
 
 On-chain anchoring is the headline not-yet-built capability: the Merkle
 batch type already reserves `anchor_tx` / `anchor_chain` fields, but no
-chain is wired in. It is explicitly out of scope for the current GTM
-phase and revisited later. Near-term work tracks the GTM Phase 2 plan
-([`planning/gtm-phase-2-plan.md`](planning/gtm-phase-2-plan.md)) — the
-SDK wedge and hosted service are in; the LangSmith integration and the
-first design-partner close are the remaining items.
+chain is wired in. It remains out of scope for now and is revisited
+later.
 
 ## Stack
 
@@ -112,10 +109,6 @@ Rust core — Ed25519 signing, SHA-256 hashing, `rs_merkle` for batching,
 SQLite for persistence. The Python SDK sits on top via PyO3 bindings
 ([`crates/awp-python/`](crates/awp-python/)). The hosted service is Rust
 + Axum + Postgres ([`services/awp-cloud/`](services/awp-cloud/)).
-
-See [`planning/awp-prototype-plan.md`](planning/awp-prototype-plan.md)
-for the full breakdown and weekly milestones; market context lives in
-[`awp-market-research.md`](awp-market-research.md).
 
 ## Audit viewer
 
