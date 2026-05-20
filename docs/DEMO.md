@@ -100,39 +100,62 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/healthz
 make -C services/awp-cloud seed
 ```
 
-The seed prints `export TEST_KEY=...` and inserts 10k synthetic attestations.
-Copy that key — each seed run creates a fresh account, so the key changes.
+The seed inserts 10k synthetic attestations and prints `export AWP_API_KEY=...`.
+The `seed@local.test` account is reused across runs; each run mints a fresh
+API key, so copy the latest one. Export it into your shell:
+
+```bash
+export AWP_API_KEY=<key from the seed output>
+```
 
 ### Step 6 — Ship attestations from the SDK to the cloud
 
 ```bash
-AWP_API_KEY=<TEST_KEY> \
 AWP_CLOUD_ENDPOINT=http://localhost:8080 \
   .venv/bin/python python/awp-langgraph/examples/kyc_graph.py --sink cloud
 ```
 
-> `AWP_CLOUD_ENDPOINT` is **required**. Without it the SDK targets the
-> placeholder production domain, which does not resolve. With a bad key the
-> example crashes loudly with a traceback — that is by design.
+> The SDK reads `AWP_API_KEY` from the environment — the same variable the
+> seed output exports. `AWP_CLOUD_ENDPOINT` is **required**: without it the
+> SDK targets the placeholder production domain, which does not resolve. With
+> a bad key the example crashes loudly with a traceback — that is by design.
 
 ### Step 7 — Show they landed, searchably
 
 ```bash
-curl -s -H "x-api-key: <TEST_KEY>" \
+curl -s -H "x-api-key: $AWP_API_KEY" \
   'http://localhost:8080/v1/attestations?limit=10' | python3 -m json.tool
 ```
 
-### Step 8 — The hosted viewer and a share-link
+### Step 8 — The dashboard and a share-link
 
 ```bash
 open http://localhost:8080
 ```
 
-Search by agent. Generate a share-link and open it in an **incognito window**
-— it renders publicly, no login required.
+The root path redirects to `/dashboard` — the account view: plan, usage
+chart, API keys, and a JSONL export button.
 
-> **Say:** "The auditor gets a URL, not a VPN account. And the hosted viewer
-> still re-verifies every signature client-side."
+Then generate a share-link for some attestations and open it in an
+**incognito window**. The share page renders the receipts publicly, no login,
+and re-verifies every signature in the browser:
+
+```bash
+# Grab a couple of attestation ids from the search in Step 7, then:
+curl -s -X POST -H "x-api-key: $AWP_API_KEY" \
+  -H 'content-type: application/json' \
+  -d '{"attestation_ids": ["<id-1>", "<id-2>"]}' \
+  http://localhost:8080/v1/share-links
+# → returns a token; open http://localhost:8080/share/<token> in incognito
+```
+
+> **Say:** "The auditor gets a URL, not a VPN account. And the share page
+> re-verifies every signature client-side — even on our own server, they
+> don't have to trust us."
+
+> Note: attestation search is API-only (`GET /v1/attestations`, Step 7) —
+> there is no server-rendered search-and-browse page in this build. The
+> share-link page is the receipt viewer.
 
 ### Reset / teardown
 
@@ -141,7 +164,7 @@ Search by agent. Generate a share-link and open it in an **incognito window**
 make -C services/awp-cloud down
 docker volume rm awp-cloud_pg-data awp-cloud_blob-data
 make -C services/awp-cloud up
-make -C services/awp-cloud seed        # prints a new TEST_KEY
+make -C services/awp-cloud seed        # prints a new AWP_API_KEY
 
 # Just stop when done:
 make -C services/awp-cloud down
