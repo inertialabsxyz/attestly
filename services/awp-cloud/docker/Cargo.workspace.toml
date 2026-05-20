@@ -1,0 +1,40 @@
+# Minimal workspace root manifest used only inside the awp-cloud Docker build.
+#
+# `awp-cloud` is its own workspace, but it depends on `awp-core` via a path
+# dependency. `awp-core`'s manifest inherits `edition`/`version`/deps from
+# `workspace.package` + `workspace.dependencies`, so it cannot build without a
+# workspace root. The repo-root Cargo.toml lists members the Docker build does
+# not copy (awp-agents, awp-examples, awp-python), so this trimmed copy lists
+# only `crates/awp-core`.
+#
+# Keep the [workspace.package] and [workspace.dependencies] blocks in sync with
+# the repo-root Cargo.toml whenever awp-core gains a new inherited dependency.
+
+[workspace]
+resolver = "2"
+members = ["crates/awp-core"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/inertialabsxyz/awp"
+
+[workspace.dependencies]
+ed25519-dalek = { version = "2.1", features = ["rand_core"] }
+sha2 = "0.10"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_bytes = "0.11"
+uuid = { version = "1", features = ["v4", "serde"] }
+hex = "0.4"
+rand = "0.8"
+thiserror = "2"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+rs_merkle = "1.5"
+rusqlite = { version = "0.32", features = ["bundled"] }
+tempfile = "3"
+
+[profile.release]
+opt-level = 3
+lto = "thin"

@@ -56,6 +56,9 @@ services:
       BLOB_ROOT: /var/lib/awp-cloud/blobs
       BIND_ADDR: 0.0.0.0:8080
       RUST_LOG: info,awp_cloud=debug
+      # Placeholder so the service boots for local demos. Billing endpoints
+      # will 401 against real Stripe — set a real test key to exercise them.
+      STRIPE_API_KEY: sk_test_local_demo_placeholder
     ports:
       - "8080:8080"
     volumes:

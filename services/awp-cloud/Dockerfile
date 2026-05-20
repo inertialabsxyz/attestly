@@ -5,7 +5,7 @@
 # own workspace that depends on the in-repo `awp-core` via a relative path).
 # `docker-compose.yml` sets `context: ../..` accordingly.
 
-FROM rust:1.83-slim AS builder
+FROM rust:1.95-slim AS builder
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends pkg-config libssl-dev ca-certificates \
@@ -13,6 +13,9 @@ RUN apt-get update \
 
 WORKDIR /build
 # Copy the awp-core crate (path dep) plus the awp-cloud service.
+# awp-core inherits edition/deps from a workspace root, so a trimmed root
+# manifest (members = awp-core only) is copied in as /build/Cargo.toml.
+COPY services/awp-cloud/docker/Cargo.workspace.toml /build/Cargo.toml
 COPY crates/awp-core /build/crates/awp-core
 COPY services/awp-cloud /build/services/awp-cloud
 
