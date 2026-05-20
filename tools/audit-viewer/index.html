@@ -237,7 +237,7 @@ footer {
     <section>
         <h2>Receipts</h2>
         <div id="dropzone" class="dropzone">
-            <p>Drop <code>attestations.json</code> and <code>executions.json</code> here, or:</p>
+            <p>Drop <code>attestations.jsonl</code> (or <code>attestations.json</code> + <code>executions.json</code>) here, or:</p>
             <input id="filepicker" type="file" multiple accept=".json,.jsonl,application/json">
             <div id="file-summary" class="file-summary"></div>
         </div>
@@ -447,7 +447,7 @@ function renderTimeline() {
     const host = document.getElementById("timeline-host");
     if (state.executions.length === 0 && state.attestations.size === 0) {
         host.innerHTML =
-            '<div class="empty">No data loaded. Run <code>cargo run --example dispatcher_flow</code> to populate <code>data/attestations.json</code> and <code>data/executions.json</code>, then drop both files above.</div>';
+            '<div class="empty">No data loaded. Run the LangGraph demo (<code>python python/awp-langgraph/examples/kyc_graph.py</code>) to produce <code>data/attestations.jsonl</code>, or a Rust example for <code>data/attestations.json</code> + <code>data/executions.json</code> — then drop the file(s) above.</div>';
         return;
     }
     rebuildIdentityIndex();
@@ -457,15 +457,22 @@ function renderTimeline() {
         if (exec.worker_attestation_id) referencedAttestationIds.add(exec.worker_attestation_id);
         if (exec.verifier_attestation_id) referencedAttestationIds.add(exec.verifier_attestation_id);
     }
-    const orphans = [];
+    const unreferenced = [];
     for (const att of state.attestations.values()) {
-        if (!referencedAttestationIds.has(att.id)) orphans.push(att);
+        if (!referencedAttestationIds.has(att.id)) unreferenced.push(att);
     }
 
-    // Sort executions by started_at ascending, then orphans by timestamp.
+    // Attestations produced by the awp-langgraph SDK carry their semantics
+    // in the `output` JSON (`node_name`, plus `references`/`answer_correct`
+    // on verifier receipts) rather than in a separate executions.json. Pair
+    // them into node rows; anything left over is a genuine orphan.
+    const { nodeRows, orphans } = buildSdkNodeRows(unreferenced);
+
+    // Sort executions by started_at ascending, node rows + orphans by timestamp.
     const execs = state.executions
         .slice()
         .sort((a, b) => (a.started_at || 0) - (b.started_at || 0));
+    nodeRows.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
     orphans.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
     let html =
@@ -479,6 +486,9 @@ function renderTimeline() {
 
     for (const exec of execs) {
         html += renderExecutionRow(exec);
+    }
+    for (const node of nodeRows) {
+        html += renderSdkNodeRow(node);
     }
     for (const att of orphans) {
         html += renderOrphanRow(att);
@@ -525,6 +535,102 @@ function renderExecutionRow(exec) {
         row +=
             '<tr class="detail"><td colspan="5">' +
             renderDetailPair(workerAtt, verifierAtt, exec) +
+            "</td></tr>";
+    }
+    return row;
+}
+
+// Parse an attestation's `output` field as an awp-langgraph SDK payload.
+// Returns the parsed object if it looks like one (`node_name` present), else
+// null — Rust-demo attestations carry plain strings here and fall through.
+function sdkPayload(att) {
+    if (!att || typeof att.output !== "string") return null;
+    let obj;
+    try { obj = JSON.parse(att.output); }
+    catch (_) { return null; }
+    if (obj && typeof obj === "object" && typeof obj.node_name === "string") {
+        return obj;
+    }
+    return null;
+}
+
+// Pair awp-langgraph SDK attestations into worker→verifier node rows. A
+// verifier receipt points at its worker via `references`. Whatever cannot be
+// paired or is not an SDK attestation is returned in `orphans` unchanged.
+function buildSdkNodeRows(unreferenced) {
+    const workers = [];
+    const verifiersByRef = new Map();
+    const orphans = [];
+
+    for (const att of unreferenced) {
+        const p = sdkPayload(att);
+        if (!p) { orphans.push(att); continue; }
+        if (p.references) {
+            verifiersByRef.set(p.references, { att, payload: p });
+        } else {
+            workers.push({ att, payload: p });
+        }
+    }
+
+    const nodeRows = [];
+    const claimedVerifiers = new Set();
+    for (const w of workers) {
+        const v = verifiersByRef.get(w.att.id) || null;
+        if (v) claimedVerifiers.add(w.att.id);
+        nodeRows.push({
+            workerAtt: w.att,
+            workerPayload: w.payload,
+            verifierAtt: v ? v.att : null,
+            verifierPayload: v ? v.payload : null,
+            timestamp: w.att.timestamp || 0,
+        });
+    }
+    // A verifier whose worker is missing is itself an orphan.
+    for (const [ref, v] of verifiersByRef) {
+        if (!claimedVerifiers.has(ref)) orphans.push(v.att);
+    }
+    return { nodeRows, orphans };
+}
+
+function sdkNodeBadge(node) {
+    for (const att of [node.workerAtt, node.verifierAtt]) {
+        if (att && verificationCache.get(att.id) === false) {
+            return { cls: "red", label: "🔴 Signature invalid" };
+        }
+    }
+    if (!node.verifierAtt) {
+        // Single-agent attestation — a valid, common path, not an error.
+        return { cls: "grey", label: "⚪ Attested" };
+    }
+    const v = node.verifierPayload;
+    if (v.attestation_valid && v.answer_correct) {
+        return { cls: "green", label: "🟢 Verified" };
+    }
+    return { cls: "amber", label: "🟡 Verified (disputed)" };
+}
+
+function renderSdkNodeRow(node) {
+    const key = "node-" + node.workerAtt.id;
+    const expanded = state.expanded.has(key);
+    const badge = sdkNodeBadge(node);
+
+    const agents =
+        escapeHtml(node.workerAtt.agent_id) +
+        " → " +
+        (node.verifierAtt ? escapeHtml(node.verifierAtt.agent_id) : "—");
+
+    let row =
+        `<tr class="row${expanded ? " expanded" : ""}" data-key="${escapeHtml(key)}">` +
+        `<td class="col-time">${escapeHtml(fmtTimestamp(node.workerAtt.timestamp))}</td>` +
+        `<td class="col-agents">${agents}</td>` +
+        `<td class="col-input">${escapeHtml(node.workerPayload.node_name)}</td>` +
+        `<td class="col-output">${escapeHtml(truncMid(node.workerPayload.output_hash, 8, 8))}</td>` +
+        `<td class="col-status"><span class="badge ${badge.cls}">${escapeHtml(badge.label)}</span></td>` +
+        "</tr>";
+    if (expanded) {
+        row +=
+            '<tr class="detail"><td colspan="5">' +
+            renderDetailPair(node.workerAtt, node.verifierAtt, null) +
             "</td></tr>";
     }
     return row;
