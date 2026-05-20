@@ -2,9 +2,10 @@
 //!
 //! Subcommands (passed as the first positional argument):
 //!
-//! - *(default)* — 10k attestations under a fresh `seed@local.test` Team
-//!   account. Prints the API key to stdout exactly once. The default path
-//!   is what `make seed` calls.
+//! - *(default)* — 10k attestations under the `seed@local.test` Team
+//!   account, printing a fresh API key. Re-runnable: the account is reused
+//!   if it already exists (a re-run appends another 10k rows). The default
+//!   path is what `make seed` calls.
 //! - `overage` — synthetic Team account with 1.05M attestation *usage*
 //!   counters in the current calendar month. Drives the Step 4 verification
 //!   command `make seed-overage`. We only bump the `usage` table — writing
@@ -31,7 +32,18 @@ use awp_cloud::blob::filesystem::FsBlobStore;
 use awp_cloud::blob::BlobStore;
 use awp_cloud::canonical::{blob_sha256, canonical_blob_bytes};
 use awp_cloud::store::postgres::PgDb;
-use awp_cloud::store::{AttestationIndex, Db, Plan};
+use awp_cloud::store::{Account, AttestationIndex, Db, Plan};
+
+/// Look up the seed account by email, or create it if this is the first run.
+/// Keeps every `make seed*` target re-runnable: `create_account` alone would
+/// fail the second time on the `accounts_email_key` unique constraint.
+async fn account_or_create(db: &PgDb, email: &str, plan: Plan) -> anyhow::Result<Account> {
+    if let Some(existing) = db.find_account_by_email(email).await? {
+        eprintln!("# reusing existing account for {email}");
+        return Ok(existing);
+    }
+    Ok(db.create_account(email, plan).await?)
+}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -60,7 +72,7 @@ async fn seed_default(db: PgDb, blob_root: PathBuf) -> anyhow::Result<()> {
     const SEED_COUNT: usize = 10_000;
     let blob = FsBlobStore::new(&blob_root);
 
-    let account = db.create_account("seed@local.test", Plan::Team).await?;
+    let account = account_or_create(&db, "seed@local.test", Plan::Team).await?;
     let cleartext = generate_api_key();
     let phc = hash_api_key(&cleartext)?;
     db.create_api_key(account.id, "seed-project", &phc).await?;
@@ -120,7 +132,7 @@ async fn seed_default(db: PgDb, blob_root: PathBuf) -> anyhow::Result<()> {
 
 async fn seed_overage(db: PgDb) -> anyhow::Result<()> {
     const OVERAGE_TOTAL: usize = 1_050_000;
-    let account = db.create_account("overage@local.test", Plan::Team).await?;
+    let account = account_or_create(&db, "overage@local.test", Plan::Team).await?;
     let cleartext = generate_api_key();
     let phc = hash_api_key(&cleartext)?;
     db.create_api_key(account.id, "overage-project", &phc)
@@ -160,9 +172,7 @@ async fn seed_old_attestations(db: PgDb, blob_root: PathBuf) -> anyhow::Result<(
     const STALE_COUNT: usize = 100;
     let blob = FsBlobStore::new(&blob_root);
 
-    let account = db
-        .create_account("retention@local.test", Plan::Team)
-        .await?;
+    let account = account_or_create(&db, "retention@local.test", Plan::Team).await?;
     let cleartext = generate_api_key();
     let phc = hash_api_key(&cleartext)?;
     db.create_api_key(account.id, "retention-project", &phc)
