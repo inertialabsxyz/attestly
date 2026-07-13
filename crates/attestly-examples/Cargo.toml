@@ -1,0 +1,41 @@
+[package]
+name = "attestly-examples"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+description = "Phase checkpoint examples for the Attestly prototype"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+attestly-core = { workspace = true }
+attestly-agents = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+chrono = { workspace = true }
+rusqlite = { workspace = true }
+uuid = { workspace = true }
+
+[[example]]
+name = "kyc_receipts"
+path = "../../examples/kyc_receipts.rs"
+
+[[example]]
+name = "simple_attestation"
+path = "../../examples/simple_attestation.rs"
+
+[[example]]
+name = "dispatcher_flow"
+path = "../../examples/dispatcher_flow.rs"
+
+[[example]]
+name = "full_pipeline"
+path = "../../examples/full_pipeline.rs"
+
+[[example]]
+name = "parallel_verifiers"
+path = "../../examples/parallel_verifiers.rs"

@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[project]
+name = "attestly-langgraph"
+version = "0.1.0a1"
+description = "One-line LangGraph integration for Attestly — signed attestations per node execution."
+readme = "README.md"
+license = { text = "Apache-2.0 OR MIT" }
+requires-python = ">=3.9"
+authors = [
+    { name = "Inertia Labs", email = "hello@inertialabs.xyz" },
+]
+keywords = ["attestly", "langgraph", "agents", "attestation", "telemetry"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security :: Cryptography",
+]
+
+# Runtime deps.
+#   attestly-core-py — Step 1 PyO3 bindings; provides Attestation, AgentIdentity,
+#     sign_attestation, verify_attestation. The SDK never re-implements
+#     signing; the byte-identity guarantee with Rust comes from here.
+#   langgraph    — Step 3 wraps StateGraph nodes, so the SDK fails fast on
+#     install if the user does not also have LangGraph available.
+dependencies = [
+    "attestly-core-py>=0.1",
+    "langgraph>=0.2",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0"]
+
+[project.urls]
+Homepage = "https://github.com/inertialabsxyz/attestly"
+Repository = "https://github.com/inertialabsxyz/attestly"
+Documentation = "https://docs.attestly.xyz"
+
+[tool.hatch.build.targets.wheel]
+# `attestly` is a namespace package shared with the `attestly-core-py` distribution
+# (which owns `attestly/__init__.py` and the C-extension). This distribution
+# ships only the `attestly.langgraph` subpackage — it must not include an
+# `attestly/__init__.py`, or it would shadow the core package's public API.
+only-include = ["attestly/langgraph"]
+sources = ["."]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Include bench_*.py so the Phase 2 <10ms-per-node budget check runs as part
+# of `make check`. Without this pytest only collects the default test_*.py
+# pattern and the benchmark assertions would silently skip.
+python_files = ["test_*.py", "bench_*.py"]

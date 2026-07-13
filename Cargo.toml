@@ -1,21 +1,21 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/awp-core",
-    "crates/awp-agents",
-    "crates/awp-examples",
-    "crates/awp-python",
+    "crates/attestly-core",
+    "crates/attestly-agents",
+    "crates/attestly-examples",
+    "crates/attestly-python",
 ]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0 OR MIT"
-repository = "https://github.com/inertialabsxyz/awp"
+repository = "https://github.com/inertialabsxyz/attestly"
 
 [workspace.dependencies]
-awp-core = { path = "crates/awp-core" }
-awp-agents = { path = "crates/awp-agents" }
+attestly-core = { path = "crates/attestly-core" }
+attestly-agents = { path = "crates/attestly-agents" }
 
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }
 sha2 = "0.10"
