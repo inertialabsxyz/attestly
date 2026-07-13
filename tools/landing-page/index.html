@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AWP — The trust layer for what AI agents do</title>
-<meta name="description" content="The trust layer for what AI agents do. A signed, verifiable record of every task your agents complete — for audit, billing, and dispute resolution. Identity tells you who acted; AWP tells you what they did.">
+<title>Attestly — The trust layer for what AI agents do</title>
+<meta name="description" content="The trust layer for what AI agents do. A signed, verifiable record of every task your agents complete — for audit, billing, and dispute resolution. Identity tells you who acted; Attestly tells you what they did.">
 <style>
 :root {
     --ink:        #0a0a0a;
@@ -490,16 +490,16 @@ section.stack p.lead {
     color: var(--muted);
     font-size: 14px;
 }
-.stack-row.awp {
+.stack-row.attestly {
     background: var(--accent);
     color: var(--ink);
     border-color: var(--accent);
 }
-.stack-row.awp .layer-name {
+.stack-row.attestly .layer-name {
     color: var(--ink);
     font-weight: 700;
 }
-.stack-row.awp .layer-players {
+.stack-row.attestly .layer-players {
     color: rgba(10, 10, 10, 0.7);
     font-weight: 500;
 }
@@ -1031,14 +1031,14 @@ footer .legal {
 
 <header class="nav">
     <div class="container">
-        <div class="brand">AWP<span class="dot">.</span></div>
+        <div class="brand">Attestly<span class="dot">.</span></div>
         <nav class="links">
             <a href="#how-it-works">How it works</a>
             <a href="#stack">The stack</a>
             <a href="#install">Install</a>
             <a href="#buyers">Who it's for</a>
             <a href="#pricing">Pricing</a>
-            <a href="https://github.com/inertialabsxyz/awp">GitHub</a>
+            <a href="https://github.com/inertialabsxyz/attestly">GitHub</a>
         </nav>
         <a href="#final" class="cta-btn">Get a demo</a>
     </div>
@@ -1046,14 +1046,14 @@ footer .legal {
 
 <section class="hero">
     <div class="container">
-        <div class="eyebrow"><span class="dot"></span> Agent Work Protocol · the trust layer for what agents do</div>
+        <div class="eyebrow"><span class="dot"></span> Attestly · the trust layer for what agents do</div>
         <h1>Cryptographic <em>receipts</em> for AI agents.</h1>
         <p class="subhead">
             A signed, verifiable record of every task your agents complete —
             <strong>for audit, billing, and dispute resolution.</strong>
         </p>
         <div class="hero-ctas">
-            <a href="https://awp-cloud.xyz/quickstart" class="btn-primary">Try it on your LangGraph agent</a>
+            <a href="https://attestly.xyz/quickstart" class="btn-primary">Try it on your LangGraph agent</a>
             <a href="#final" class="btn-secondary">Talk to us about a pilot</a>
         </div>
         <div class="scroll-hint">Scroll</div>
@@ -1079,7 +1079,7 @@ footer .legal {
             </div>
             <div class="stat">
                 <div class="stat-number">0</div>
-                <div class="stat-label">portable, third-party-verifiable receipt formats existed in the agent stack — before AWP.</div>
+                <div class="stat-label">portable, third-party-verifiable receipt formats existed in the agent stack — before Attestly.</div>
                 <div class="stat-source">SOURCE — MARKET LANDSCAPE, MID-2026</div>
             </div>
         </div>
@@ -1141,7 +1141,7 @@ footer .legal {
                 </p>
                 <p>
                     <strong>This is the category claim.</strong> Identity products attest to who was
-                    allowed to act. AWP attests to <em>what they did</em> — and proves it by doing it again.
+                    allowed to act. Attestly attests to <em>what they did</em> — and proves it by doing it again.
                 </p>
                 <ul>
                     <li>Two independent verdicts: signature valid, answer correct</li>
@@ -1208,13 +1208,13 @@ ROW 3 — <span class="bad">FLAG</span>    &nbsp; <span class="bad">✗ signatur
         <h2>Three receipts. <em>One has been tampered with.</em></h2>
         <p class="lead">
             Below is what your compliance lead sees when they open the audit viewer.
-            The third row's signature does not match — and AWP catches it. If application
+            The third row's signature does not match — and Attestly catches it. If application
             logs were the only record, that edit would be invisible.
         </p>
         <div class="demo-card">
             <div class="demo-card-head">
                 <div class="dots"><span></span><span></span><span></span></div>
-                <div>AWP Audit Viewer · localhost</div>
+                <div>Attestly Audit Viewer · localhost</div>
                 <div>3 receipts loaded</div>
             </div>
             <table class="demo-table">
@@ -1258,15 +1258,15 @@ ROW 3 — <span class="bad">FLAG</span>    &nbsp; <span class="bad">✗ signatur
         <p class="lead">
             The agent stack has names for almost every layer — except this one. Models, orchestration,
             tool access, identity, observability, payments. The slot for "what did the agent actually do,
-            and can I prove it" was empty. AWP is that layer.
+            and can I prove it" was empty. Attestly is that layer.
         </p>
         <div class="stack-diagram">
             <div class="stack-row">
                 <div class="layer-name">Payments</div>
                 <div class="layer-players">Stripe Agent Toolkit · Skyfire · x402 · Visa/Mastercard agent rails</div>
             </div>
-            <div class="stack-row awp">
-                <div class="layer-name">Trust — AWP</div>
+            <div class="stack-row attestly">
+                <div class="layer-name">Trust — Attestly</div>
                 <div class="layer-players">Signed receipts · Worker–Verifier verdicts · tamper-evident retention</div>
             </div>
             <div class="stack-row">
@@ -1293,12 +1293,12 @@ ROW 3 — <span class="bad">FLAG</span>    &nbsp; <span class="bad">✗ signatur
         <p class="stack-footnote">
             <strong>A note on "trust layer."</strong> Some products call themselves the trust layer for
             agents and live at the identity slot — answering <em>"who is this agent and is it allowed
-            to act."</em> AWP lives one layer down: <em>"what did the agent actually do, and is the
-            record intact."</em> Both layers are real. AWP is built for the second one.
+            to act."</em> Attestly lives one layer down: <em>"what did the agent actually do, and is the
+            record intact."</em> Both layers are real. Attestly is built for the second one.
         </p>
         <p class="stack-footnote" style="margin-top: 16px;">
             <strong>Complementary, not competitive.</strong> Observability tools tell you what happened on
-            your infrastructure. AWP tells you what the agent <em>claimed</em>, signed at the source, and
+            your infrastructure. Attestly tells you what the agent <em>claimed</em>, signed at the source, and
             proves the claim wasn't edited after the fact. Both belong in your stack.
         </p>
     </div>
@@ -1309,16 +1309,16 @@ ROW 3 — <span class="bad">FLAG</span>    &nbsp; <span class="bad">✗ signatur
         <div class="eyebrow">Install</div>
         <h2>One line. <em>Your LangGraph agent now signs every node.</em></h2>
         <p class="lead">
-            Wrap any <code>StateGraph</code> with <code>awp.langgraph.attest</code>. Every node execution
+            Wrap any <code>StateGraph</code> with <code>attestly.langgraph.attest</code>. Every node execution
             emits a signed receipt to a local file or a configurable sink. No model changes, no orchestration
             changes — just attestations flowing alongside the work.
         </p>
         <div class="install-grid">
             <div class="install-code">
-<span class="prompt">$</span> pip install awp-langgraph
+<span class="prompt">$</span> pip install attestly-langgraph
 
 <span class="comment"># in your agent file</span>
-<span class="kw">from</span> awp.langgraph <span class="kw">import</span> attest
+<span class="kw">from</span> attestly.langgraph <span class="kw">import</span> attest
 <span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph
 
 graph = build_my_kyc_graph()
@@ -1338,13 +1338,13 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
                 <li>
                     <div>
                         <strong>Local-first by default.</strong>
-                        <span>FileSink writes JSONL to disk. You can use AWP forever without a server, an account, or a network call.</span>
+                        <span>FileSink writes JSONL to disk. You can use Attestly forever without a server, an account, or a network call.</span>
                     </div>
                 </li>
                 <li>
                     <div>
                         <strong>Switch sinks when you're ready.</strong>
-                        <span>Same receipts, different destination — local file, AWP Cloud, your own S3, or a custom callable.</span>
+                        <span>Same receipts, different destination — local file, Attestly Cloud, your own S3, or a custom callable.</span>
                     </div>
                 </li>
                 <li>
@@ -1368,7 +1368,7 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
                 <h3>Pass the audit on the first attempt.</h3>
                 <p class="persona-pain">
                     Your examiner asks <em>"show me what the agent did, and prove it wasn't edited."</em>
-                    Application logs are circumstantial. AWP attestations are evidence.
+                    Application logs are circumstantial. Attestly attestations are evidence.
                 </p>
                 <div class="persona-outcome">
                     <span class="label">Pay-for</span>
@@ -1380,7 +1380,7 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
                 <h3>Settle disputes in your favour.</h3>
                 <p class="persona-pain">
                     A buyer disputes a $500 agent task. You can refund (lose revenue) or hold the line
-                    (lose the buyer). With AWP, the receipt is the evidence.
+                    (lose the buyer). With Attestly, the receipt is the evidence.
                 </p>
                 <div class="persona-outcome">
                     <span class="label">Pay-for</span>
@@ -1392,7 +1392,7 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
                 <h3>Move past "we don't trust your logs."</h3>
                 <p class="persona-pain">
                     Their procurement team wants proof of what your agent did, signed by the agent —
-                    not by your platform. AWP is signed at the source.
+                    not by your platform. Attestly is signed at the source.
                 </p>
                 <div class="persona-outcome">
                     <span class="label">Pay-for</span>
@@ -1406,9 +1406,9 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
 <section class="pricing" id="pricing">
     <div class="container">
         <div class="eyebrow">Pricing</div>
-        <h2>Two ways to run AWP. <em>Switch directions any time.</em></h2>
+        <h2>Two ways to run Attestly. <em>Switch directions any time.</em></h2>
         <p class="lead">
-            The SDK is open source and works offline forever. AWP Cloud is for teams who'd rather not run
+            The SDK is open source and works offline forever. Attestly Cloud is for teams who'd rather not run
             their own retention, sharing, and compliance infrastructure. Same signed receipts. Same
             verification. You own the keys either way.
         </p>
@@ -1417,7 +1417,7 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
                 <div class="tier-label">Open source</div>
                 <h3 class="tier-name">Self-hosted</h3>
                 <div class="tier-price">$0<span class="unit">/ forever</span></div>
-                <p class="tier-strap">Run AWP entirely on your own infrastructure. No account, no telemetry, no dependency on us.</p>
+                <p class="tier-strap">Run Attestly entirely on your own infrastructure. No account, no telemetry, no dependency on us.</p>
                 <ul>
                     <li>LangGraph SDK (Python, MIT)</li>
                     <li>FileSink → local JSONL</li>
@@ -1426,7 +1426,7 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
                     <li>Worker–Verifier protocol</li>
                     <li>Community support</li>
                 </ul>
-                <a href="https://github.com/inertialabsxyz/awp" class="tier-cta">Read the code</a>
+                <a href="https://github.com/inertialabsxyz/attestly" class="tier-cta">Read the code</a>
             </div>
             <div class="price-card featured">
                 <div class="tier-label">Most teams start here</div>
@@ -1442,7 +1442,7 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
                     <li>API key access from CloudSink</li>
                     <li>Email support, &lt; 24h response</li>
                 </ul>
-                <a href="https://app.awp-cloud.xyz/billing/checkout?plan=team" class="tier-cta">Start free trial</a>
+                <a href="https://app.attestly.xyz/billing/checkout?plan=team" class="tier-cta">Start free trial</a>
             </div>
             <div class="price-card">
                 <div class="tier-label">Regulated buyers</div>
@@ -1457,7 +1457,7 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
                     <li>Compliance report templates</li>
                     <li>Dedicated SE, MSA &amp; DPA, SLA</li>
                 </ul>
-                <a href="mailto:hello@inertialabs.xyz?subject=AWP%20Enterprise%20enquiry" class="tier-cta">Contact sales</a>
+                <a href="mailto:hello@inertialabs.xyz?subject=Attestly%20Enterprise%20enquiry" class="tier-cta">Contact sales</a>
             </div>
         </div>
         <div class="free-to-leave" id="free-to-leave">
@@ -1472,8 +1472,8 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
                 One command pulls everything down as JSON Lines, ready to drop into the static
                 viewer or your own pipeline:
             </p>
-            <pre><code>curl -H "x-api-key: $AWP_KEY" \
-     https://app.awp-cloud.xyz/v1/export &gt; receipts.jsonl</code></pre>
+            <pre><code>curl -H "x-api-key: $ATTESTLY_KEY" \
+     https://app.attestly.xyz/v1/export &gt; receipts.jsonl</code></pre>
             <p class="leave-note">
                 The export endpoint stays available for 30 days after cancellation. After that,
                 your data is purged per our retention promise — but the receipts you exported
@@ -1485,19 +1485,19 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
 
 <section class="not">
     <div class="container">
-        <h2>What AWP <em>is not</em>.</h2>
+        <h2>What Attestly <em>is not</em>.</h2>
         <div class="not-grid">
             <div class="not-card">
                 <h4>Not a replacement for observability.</h4>
-                <p>Datadog, LangSmith, Helicone tell you what happened on your infrastructure. AWP tells you what the agent claimed and proves it. Complementary.</p>
+                <p>Datadog, LangSmith, Helicone tell you what happened on your infrastructure. Attestly tells you what the agent claimed and proves it. Complementary.</p>
             </div>
             <div class="not-card">
                 <h4>Not a judgement on correctness.</h4>
-                <p>AWP attests to what was claimed, not to whether the claim is right under your business rules. Model validation is your job; AWP makes the claims auditable.</p>
+                <p>Attestly attests to what was claimed, not to whether the claim is right under your business rules. Model validation is your job; Attestly makes the claims auditable.</p>
             </div>
             <div class="not-card">
                 <h4>Not a general "AI trust" product.</h4>
-                <p>The trust AWP provides is narrow and verifiable: <em>what the agent did, signed at the source, provably un-edited.</em> Not fairness, not alignment, not bias. That narrowness is why auditors accept it — and why we call it a trust <em>layer</em>, not a trust <em>solution</em>.</p>
+                <p>The trust Attestly provides is narrow and verifiable: <em>what the agent did, signed at the source, provably un-edited.</em> Not fairness, not alignment, not bias. That narrowness is why auditors accept it — and why we call it a trust <em>layer</em>, not a trust <em>solution</em>.</p>
             </div>
             <div class="not-card">
                 <h4>Not on-chain AI.</h4>
@@ -1516,12 +1516,12 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
         <div class="eyebrow" style="text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted); font-size: 13px; margin-bottom: 24px;">The trust layer for what AI agents do</div>
         <h2>Receipts your auditor <em>will accept.</em></h2>
         <p>
-            Identity tells you who acted. AWP tells you what they did — and proves it by doing it again.<br>
+            Identity tells you who acted. Attestly tells you what they did — and proves it by doing it again.<br>
             Install the SDK and produce your first signed receipt in five minutes, or book a pilot conversation and bring your compliance lead.
         </p>
         <div class="hero-ctas" style="justify-content: center;">
-            <a href="https://awp-cloud.xyz/quickstart" class="btn-primary">Try it on your LangGraph agent</a>
-            <a href="mailto:hello@inertialabs.xyz?subject=AWP%20pilot" class="btn-secondary">Talk to us about a pilot</a>
+            <a href="https://attestly.xyz/quickstart" class="btn-primary">Try it on your LangGraph agent</a>
+            <a href="mailto:hello@inertialabs.xyz?subject=Attestly%20pilot" class="btn-secondary">Talk to us about a pilot</a>
         </div>
     </div>
 </section>
@@ -1530,7 +1530,7 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
     <div class="container">
         <div class="footer-grid">
             <div class="footer-brand">
-                <h4>AWP<span class="dot">.</span></h4>
+                <h4>Attestly<span class="dot">.</span></h4>
                 <p>The trust layer for what AI agents do. Built by Inertia Labs.</p>
             </div>
             <div class="footer-col">
@@ -1542,10 +1542,10 @@ graph = <span class="strong">attest</span>(graph, agent_id=<span class="str">"ky
             </div>
             <div class="footer-col">
                 <h5>Resources</h5>
-                <a href="https://github.com/inertialabsxyz/awp">GitHub</a>
-                <a href="https://github.com/inertialabsxyz/awp/blob/main/docs/ARCHITECTURE.md">Architecture</a>
-                <a href="https://github.com/inertialabsxyz/awp/blob/main/docs/compliance/SR_11_7.md">SR 11-7 mapping</a>
-                <a href="https://pypi.org/project/awp-langgraph/">awp-langgraph on PyPI</a>
+                <a href="https://github.com/inertialabsxyz/attestly">GitHub</a>
+                <a href="https://github.com/inertialabsxyz/attestly/blob/main/docs/ARCHITECTURE.md">Architecture</a>
+                <a href="https://github.com/inertialabsxyz/attestly/blob/main/docs/compliance/SR_11_7.md">SR 11-7 mapping</a>
+                <a href="https://pypi.org/project/attestly-langgraph/">attestly-langgraph on PyPI</a>
             </div>
             <div class="footer-col">
                 <h5>Company</h5>

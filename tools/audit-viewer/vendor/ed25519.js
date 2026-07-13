@@ -1,5 +1,5 @@
 // ed25519 signature verification (verify-only) — pure JavaScript, no
-// external dependencies. Intended for the AWP audit viewer, where an
+// external dependencies. Intended for Attestly audit viewer, where an
 // auditor opens index.html locally and re-checks signed receipts in their
 // own browser without trusting the page or any CDN.
 //

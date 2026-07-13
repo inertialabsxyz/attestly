@@ -1,7 +1,7 @@
-# AWP — Market Research & Go-to-Market Report
+# Attestly — Market Research & Go-to-Market Report
 
 **Prepared:** 2026-05-06
-**Subject:** Agent Work Protocol (AWP) — signed attestations for AI agent work, with optional on-chain anchoring
+**Subject:** Attestly — signed attestations for AI agent work, with optional on-chain anchoring
 **Author perspective:** Market researcher covering web3, Ethereum, LLM/agent infra, and infrastructure for financial systems
 
 ---
@@ -10,7 +10,7 @@
 
 | Question | Answer |
 |---|---|
-| Does AWP solve a real problem now or in the next 6 months? | **Yes — but the buyer is split between two camps with different urgency profiles.** |
+| Does Attestly solve a real problem now or in the next 6 months? | **Yes — but the buyer is split between two camps with different urgency profiles.** |
 | Is there a TAM that supports a $1M ARR business in 24 months? | **Yes, comfortably — $1M ARR is roughly ~30–60 mid-market customers or ~3–6 platform deals.** |
 | Overall market score (1–10) | **6.5 / 10** |
 | Recommendation | **Go to market, but reposition.** Lead with **"agent audit & receipts"** for compliance/regulated buyers. Treat on-chain anchoring as an *optional* settlement primitive, not the headline. |
@@ -31,9 +31,9 @@ By mid-2026, the agent stack has roughly settled into recognizable layers:
 - **Identity / access:** Auth0/Okta agent identity products, plus emerging "agent passports"
 - **Eval / observability:** LangSmith, Braintrust, Arize, Helicone
 - **Payments / commerce:** Stripe Agent Toolkit, Skyfire, Coinbase x402, Visa/Mastercard agent rails
-- **Audit / verification:** **Sparsely populated.** This is where AWP plays.
+- **Audit / verification:** **Sparsely populated.** This is where Attestly plays.
 
-The "what did the agent actually do, and can I prove it" layer is real but underdeveloped. Eval tools answer *how well* an agent did. Observability answers *what happened on my server*. Neither produces a portable, third-party-verifiable receipt. That gap is AWP's wedge.
+The "what did the agent actually do, and can I prove it" layer is real but underdeveloped. Eval tools answer *how well* an agent did. Observability answers *what happened on my server*. Neither produces a portable, third-party-verifiable receipt. That gap is Attestly's wedge.
 
 ### 1.2 Three macro forces creating demand in the next 6 months
 
@@ -43,21 +43,21 @@ The "what did the agent actually do, and can I prove it" layer is real but under
 
 ### 1.3 Competitive landscape
 
-| Category | Players | How they relate to AWP |
+| Category | Players | How they relate to Attestly |
 |---|---|---|
-| **Agent observability** | LangSmith, Braintrust, Arize, Helicone, Langfuse | Adjacent; they log, AWP attests. Could become AWP's distribution channel or its competitor if they add signing. |
-| **ZK ML / verifiable inference** | EZKL, Giza, Ora, Modulus Labs | Solve a *harder* problem (prove model inference). Slow, expensive, narrow. AWP is the pragmatic 80% solution. |
-| **Crypto agent frameworks** | Virtuals, Olas (formerly Autonolas), Fetch.ai, ai16z/ELIZA, Wayfinder, ChaosChain | Most have ad-hoc attestation primitives. None have shipped a clean cross-framework spec. AWP could become the standard here. |
-| **Agent identity / DIDs** | cheqd, Disco, Privado, World ID for agents | Complementary; AWP needs identity, but doesn't need to own it. |
-| **Enterprise AI audit** | Credo AI, Holistic AI, Fairly, Robust Intelligence | Policy & risk layer. Could be a *channel* for AWP — they need underlying receipts. |
-| **Verifiable compute (zkVM)** | RISC Zero, Succinct (SP1), Aleo | AWP's optional upgrade path (per Appendix A of the prototype plan). |
-| **Closest direct analog** | EigenLayer AVS attestations, Ritual, Atoma | Crypto-native, validator-set heavy, opinionated about chain. AWP is lighter and chain-agnostic. |
+| **Agent observability** | LangSmith, Braintrust, Arize, Helicone, Langfuse | Adjacent; they log, Attestly attests. Could become Attestly's distribution channel or its competitor if they add signing. |
+| **ZK ML / verifiable inference** | EZKL, Giza, Ora, Modulus Labs | Solve a *harder* problem (prove model inference). Slow, expensive, narrow. Attestly is the pragmatic 80% solution. |
+| **Crypto agent frameworks** | Virtuals, Olas (formerly Autonolas), Fetch.ai, ai16z/ELIZA, Wayfinder, ChaosChain | Most have ad-hoc attestation primitives. None have shipped a clean cross-framework spec. Attestly could become the standard here. |
+| **Agent identity / DIDs** | cheqd, Disco, Privado, World ID for agents | Complementary; Attestly needs identity, but doesn't need to own it. |
+| **Enterprise AI audit** | Credo AI, Holistic AI, Fairly, Robust Intelligence | Policy & risk layer. Could be a *channel* for Attestly — they need underlying receipts. |
+| **Verifiable compute (zkVM)** | RISC Zero, Succinct (SP1), Aleo | Attestly's optional upgrade path (per Appendix A of the prototype plan). |
+| **Closest direct analog** | EigenLayer AVS attestations, Ritual, Atoma | Crypto-native, validator-set heavy, opinionated about chain. Attestly is lighter and chain-agnostic. |
 
 **Whitespace:** A clean, framework-agnostic, MCP-complementary attestation spec with a permissive license and a reference implementation. No one credibly owns this slot today. Window is open but not infinite — expect Anthropic, LangChain, or one of the crypto agent platforms to ship something in this space within 12 months.
 
 ---
 
-## 2. Does AWP Solve a Real Problem?
+## 2. Does Attestly Solve a Real Problem?
 
 ### 2.1 The four buyer personas
 
@@ -75,9 +75,9 @@ The "what did the agent actually do, and can I prove it" layer is real but under
 - **Persona C:** Already pulling. They will adopt anything credible that ships.
 - **Persona D:** No urgency.
 
-**Verdict:** Real problem, multiple buyers, regulatory tailwind. The question is not "is there a problem" but "can AWP own the category before a bigger player does."
+**Verdict:** Real problem, multiple buyers, regulatory tailwind. The question is not "is there a problem" but "can Attestly own the category before a bigger player does."
 
-### 2.3 Why AWP's positioning is at risk
+### 2.3 Why Attestly's positioning is at risk
 
 Reading the landing page cold, a CISO at a regulated buyer sees "blockchain," "Merkle," "EVM L2," "chain-agnostic" — and bounces. The current page reads as a crypto infrastructure project that happens to do attestations. The buyer with the budget reads it as a crypto infrastructure project they don't need.
 
@@ -141,17 +141,17 @@ Before spending dollars on launch, three positioning decisions need to be locked
 
 1. **Lead message:** "Cryptographic receipts for AI agent work" — *not* "blockchain protocol for agents." Chain anchoring is a footnote feature for buyers who ask.
 2. **Primary ICP:** Regulated mid-market (fintech, insurance, healthtech) deploying agents in production. Secondary: crypto-native agent networks (for credibility and ecosystem mindshare).
-3. **Product surface:** Ship a hosted reference service (`awp-cloud`) alongside the open-source spec. Open spec wins mindshare; hosted service generates revenue. The crypto-only path will not get to $1M ARR in 24 months.
+3. **Product surface:** Ship a hosted reference service (`attestly-cloud`) alongside the open-source spec. Open spec wins mindshare; hosted service generates revenue. The crypto-only path will not get to $1M ARR in 24 months.
 
 ### 4.2 Short-term defensibility levers (3–6 months)
 
 Defensibility is structurally hard to score high on for any pre-revenue infra play. Five concrete moves materially raise the floor without requiring a token or a moonshot:
 
-1. **Be the *default* in one popular framework, not a plugin.** A plugin is copyable; being the built-in attestation layer in (say) Mastra or AutoAgents is sticky. Negotiate "AWP-native" status in exchange for engineering work and joint marketing — not just a PR.
-2. **Capture a vertical-specific schema.** Generic attestations are commoditizable. An "AWP for healthcare claims processing" or "AWP for KYC agents" schema, co-developed with a regulator-facing partner, is much harder to displace because it encodes domain rules, not just signatures.
-3. **Own the verifier marketplace, not just the spec.** Once 3rd-party verifier agents exist on AWP, switching costs accrue to the network of verifiers, not the format. Ship a verifier registry early — small product, large moat.
+1. **Be the *default* in one popular framework, not a plugin.** A plugin is copyable; being the built-in attestation layer in (say) Mastra or AutoAgents is sticky. Negotiate "Attestly-native" status in exchange for engineering work and joint marketing — not just a PR.
+2. **Capture a vertical-specific schema.** Generic attestations are commoditizable. An "Attestly for healthcare claims processing" or "Attestly for KYC agents" schema, co-developed with a regulator-facing partner, is much harder to displace because it encodes domain rules, not just signatures.
+3. **Own the verifier marketplace, not just the spec.** Once 3rd-party verifier agents exist on Attestly, switching costs accrue to the network of verifiers, not the format. Ship a verifier registry early — small product, large moat.
 4. **Reference data set / benchmark.** Publish "AgentAudit-1" — a public benchmark of attestation/verification quality across agent frameworks. Whoever owns the benchmark in this category owns the conversation. Cost ~$10–20k. Asymmetric upside.
-5. **Compliance pre-mapping as IP.** The "AWP → SR 11-7 / EU AI Act / HIPAA clause" mapping documents are *legal interpretation work* that compounds. A buyer choosing a competitor has to redo it. Make these public; it's marketing *and* a moat.
+5. **Compliance pre-mapping as IP.** The "Attestly → SR 11-7 / EU AI Act / HIPAA clause" mapping documents are *legal interpretation work* that compounds. A buyer choosing a competitor has to redo it. Make these public; it's marketing *and* a moat.
 
 Realistic uplift: defensibility 4 → 6.
 
@@ -160,9 +160,9 @@ Realistic uplift: defensibility 4 → 6.
 Four channel partnerships that compress the GTM timeline:
 
 1. **Co-sell with one observability vendor.** LangSmith / Braintrust / Helicone all have sales motions into your ICP and don't have an attestation story. A referral or OEM relationship gives you their pipeline. Realistic in 6 months if approached early.
-2. **MCP-server bundling.** Every MCP server is a distribution surface. Ship a one-line wrapper that adds AWP attestations to any MCP server, then push it into the top 20 community servers. The agent-era equivalent of `npm install` distribution.
+2. **MCP-server bundling.** Every MCP server is a distribution surface. Ship a one-line wrapper that adds Attestly attestations to any MCP server, then push it into the top 20 community servers. The agent-era equivalent of `npm install` distribution.
 3. **Audit firm channel.** Big-4 advisory teams (Deloitte, PwC, EY) are scrambling for AI audit methodology. One signed methodology partnership = inbound enterprise pipeline you couldn't buy.
-4. **Insurance partnership.** AI liability insurance is an emerging market (Munich Re, Lloyd's syndicates, Coalition). Carriers want underwriting signal — attestations are exactly that. A pilot with one carrier creates a "AWP-attested agents qualify for lower premiums" wedge that drives adoption from the demand side.
+4. **Insurance partnership.** AI liability insurance is an emerging market (Munich Re, Lloyd's syndicates, Coalition). Carriers want underwriting signal — attestations are exactly that. A pilot with one carrier creates a "Attestly-attested agents qualify for lower premiums" wedge that drives adoption from the demand side.
 
 Realistic uplift: distribution 5 → 7.
 
@@ -209,8 +209,8 @@ These two sections together move the overall market score from 6.5 → ~7.5 with
   - Thursday: Demo video (3 min, no narration, just the protocol working end-to-end).
   - Friday: Twitter Space / X audio with 2–3 known names from agent infra space.
 - **Ecosystem moves:**
-  - PR to MCP spec repo proposing complementarity language ("MCP defines tool access, AWP defines tool attestation").
-  - Open issues in 3 popular agent frameworks (LangGraph, CrewAI, Mastra) proposing AWP integration; offer to do the work.
+  - PR to MCP spec repo proposing complementarity language ("MCP defines tool access, Attestly defines tool attestation").
+  - Open issues in 3 popular agent frameworks (LangGraph, CrewAI, Mastra) proposing Attestly integration; offer to do the work.
 - **Community:**
   - Discord open. Spec RFC process documented.
 - **Press:** Light. The Information, Latent Space podcast pitch, Decrypt for the crypto-side angle.
@@ -237,13 +237,13 @@ These two sections together move the overall market score from 6.5 → ~7.5 with
 
 ### Month 4 — Ecosystem Wedge
 
-**Goals:** Get AWP attestations *generated by default* in at least one popular agent framework.
+**Goals:** Get Attestly attestations *generated by default* in at least one popular agent framework.
 
 - **Integrations shipped:**
-  - LangGraph callback that emits AWP attestations.
+  - LangGraph callback that emits Attestly attestations.
   - CrewAI middleware.
   - Mastra plugin.
-  - At least one MCP server reference implementation that produces AWP attestations for tool calls.
+  - At least one MCP server reference implementation that produces Attestly attestations for tool calls.
 - **Crypto ecosystem:**
   - Partnership announcement with one crypto agent network (Olas, Virtuals, or similar). Co-authored post. They get a credible attestation primitive; you get distribution and mindshare in that segment.
 - **First conference appearance:** Submit talk to one technical conference (LlamaCon, AI Engineer Summit, or Devcon, depending on lead). Talk title: *"Receipts for agents: what every multi-agent system gets wrong about provenance."*
@@ -263,7 +263,7 @@ These two sections together move the overall market score from 6.5 → ~7.5 with
   - 200 named accounts, sequenced outbound, segmented by persona.
   - Two ICP-specific sales decks (regulated enterprise vs. agent platform).
 - **Webinar program:**
-  - One per month, paired with a partner. Format: "[Partner X] + AWP — building auditable agents."
+  - One per month, paired with a partner. Format: "[Partner X] + Attestly — building auditable agents."
 - **Analyst briefings:** Forrester, Gartner. Position as a category-creator in "AI agent governance / attestation."
 
 **Spend:** ~$15k — sales hire ramp, webinar production, paid LinkedIn campaigns.
@@ -273,11 +273,11 @@ These two sections together move the overall market score from 6.5 → ~7.5 with
 **Goals:** Move from product to *standard*. This is the moat.
 
 - **Standards play:**
-  - Submit AWP to a relevant standards body or open governance process. Candidates: Linux Foundation AI & Data, OpenWallet Foundation, IETF (long shot but high signal), or a new lightweight foundation seeded with 3–5 partners.
+  - Submit Attestly to a relevant standards body or open governance process. Candidates: Linux Foundation AI & Data, OpenWallet Foundation, IETF (long shot but high signal), or a new lightweight foundation seeded with 3–5 partners.
   - Multi-company spec working group: one regulated enterprise, one agent platform, one framework, one crypto network, one identity provider.
 - **Spec v1.0:** Published with semver guarantees. Backwards-compatibility commitments.
 - **Reference compliance kit:**
-  - "AWP for [SR 11-7 / EU AI Act / HIPAA]" — three documents matching attestation features to specific regulatory clauses.
+  - "Attestly for [SR 11-7 / EU AI Act / HIPAA]" — three documents matching attestation features to specific regulatory clauses.
 - **Pipeline review:**
   - At least 5 active sales pursuits at $50k+ ACV.
   - At least 2 closed-won at any size.
@@ -310,7 +310,7 @@ These two sections together move the overall market score from 6.5 → ~7.5 with
 ### Failure Modes to Watch
 
 1. **Crypto framing creep.** If the team can't resist leading with chain content, the enterprise pipeline will not materialize. Discipline this in every public artifact.
-2. **A bigger player ships.** If Anthropic or LangChain releases an attestation primitive in this window, AWP must already have a meaningful design partner and an ecosystem integration story to remain differentiated. Move fast.
+2. **A bigger player ships.** If Anthropic or LangChain releases an attestation primitive in this window, Attestly must already have a meaningful design partner and an ecosystem integration story to remain differentiated. Move fast.
 3. **Spec without product.** Open spec without a hosted offering won't get to $1M ARR. The hosted service is non-negotiable for revenue.
 4. **Founder bandwidth.** This plan assumes founder-led selling for months 1–4. If that's not realistic, hire the AE in month 3 instead of month 5 and slow the integration shipping pace.
 
@@ -318,7 +318,7 @@ These two sections together move the overall market score from 6.5 → ~7.5 with
 
 ## 6. Bottom Line
 
-AWP solves a real problem at a real time. The core technical thesis is right and the prototype direction is sound. The market is small in revenue dollars today but growing on a steep curve, with regulatory and commercial tailwinds both pushing in your favor over the next 6–18 months.
+Attestly solves a real problem at a real time. The core technical thesis is right and the prototype direction is sound. The market is small in revenue dollars today but growing on a steep curve, with regulatory and commercial tailwinds both pushing in your favor over the next 6–18 months.
 
 The win condition is becoming the **default attestation format** developers reach for when an agent does something that has to be provable later. That's a category-creation play, not a feature play, and the next six months are the right time to make it.
 
@@ -330,14 +330,14 @@ The win condition is becoming the **default attestation format** developers reac
 
 The question deserves direct treatment because it's the natural one to ask in this space, and the answer is more nuanced than the landing page's "Not a token. No incentive theater" suggests.
 
-### A.1 Where a token genuinely helps AWP
+### A.1 Where a token genuinely helps Attestly
 
 - **Bootstrapping a verifier network.** This is the strongest case. If you want hundreds of independent verifier agents (Persona C use case), staking + slashing economics solve the cold-start problem better than salary or grants. EigenLayer-style restaking for agent verification is a legitimate primitive.
 - **Aligning agent-network operators.** Crypto-native agent platforms (Olas, Virtuals, Fetch) only really integrate things that have token economics they can plug into.
 - **Capital formation.** A token round in 2026 can raise $5–20M faster than equity at this stage. Real money, real runway.
 - **Liquidity for early contributors / framework integrators.** Hard to pay LangGraph maintainers in equity; easy to allocate them tokens.
 
-### A.2 Where a token actively hurts AWP specifically
+### A.2 Where a token actively hurts Attestly specifically
 
 - **The highest-value buyer (Persona A — regulated enterprise) cannot touch it.** Bank/insurer/healthco procurement will not adopt protocols with native tokens. Compliance, treasury, and legal block it. This is the killer objection — and the $1M ARR path runs through these buyers.
 - **It reframes the project as crypto infra.** Re-creates the exact positioning problem flagged in §2.3, but worse and harder to reverse.
@@ -365,6 +365,6 @@ A token launch becomes a sensible *expansion* — not the core bet — when all 
 
 ### A.5 Bottom line on token
 
-It's a real revenue and alignment mechanism in this space, but launching one in the next 6 months trades AWP's strongest GTM path (regulated enterprise) for its weakest in dollar terms (crypto-native, low-$ TAM today). Wrong order.
+It's a real revenue and alignment mechanism in this space, but launching one in the next 6 months trades Attestly's strongest GTM path (regulated enterprise) for its weakest in dollar terms (crypto-native, low-$ TAM today). Wrong order.
 
 **Earn the right to a token by first building the verifier network and revenue base; *then* tokenize the network you already have.** The protocol's chain-agnostic, optional-anchoring design means this path is preserved without commitment cost — which is itself an underrated strategic asset.

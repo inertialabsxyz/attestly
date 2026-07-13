@@ -1,6 +1,6 @@
-# AWP Audit Viewer
+# Attestly Audit Viewer
 
-A static, single-page viewer for AWP attestation receipts. Open
+A static, single-page viewer for Attestly attestation receipts. Open
 [`index.html`](index.html) in a browser, drop in `attestations.json` and
 `executions.json`, and read the receipts as a non-developer.
 
@@ -45,7 +45,7 @@ Each receipt the viewer renders is re-checked locally:
 1. The 32-byte ed25519 public key embedded in the receipt is decoded.
 2. The exact bytes the agent originally signed — the canonical encoding
    produced by `Attestation::signing_payload` in
-   [`crates/awp-core/src/attestation.rs`](../../crates/awp-core/src/attestation.rs)
+   [`crates/attestly-core/src/attestation.rs`](../../crates/attestly-core/src/attestation.rs)
    — are reconstructed from the on-disk fields.
 3. The signature is verified using a vendored, verify-only ed25519
    implementation in [`vendor/ed25519.js`](vendor/ed25519.js).

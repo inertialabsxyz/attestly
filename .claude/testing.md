@@ -17,14 +17,14 @@ make fix          # auto-format + apply safe clippy fixes
 
 Every feature commit must include at least one test for the new behaviour. Every bug fix must include a regression test that would have caught the bug. These are not optional — a commit that adds behaviour without a test, or fixes a bug without a regression test, is incomplete.
 
-If a behaviour genuinely cannot be exercised without infrastructure unavailable in tests (e.g. a real network call to `awp-cloud` from `CloudSink`), document why in the PR description and supply a mock-based test instead. This should be rare.
+If a behaviour genuinely cannot be exercised without infrastructure unavailable in tests (e.g. a real network call to `attestly-cloud` from `CloudSink`), document why in the PR description and supply a mock-based test instead. This should be rare.
 
 ## Two test patterns
 
 **Unit tests** — pure functions. Live in `#[cfg(test)]` modules inside the source file. Import from `super::*`. Use for any logic that does not need agent orchestration, file I/O, or cross-process behaviour.
 
 ```rust
-// crates/awp-core/src/attestation.rs
+// crates/attestly-core/src/attestation.rs
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -46,7 +46,7 @@ mod tests {
 **Integration tests** — live in `crates/<crate>/tests/`, one `.rs` file per scenario. Use for anything that crosses module boundaries: Worker/Verifier round-trips, dispatcher coordination, file-store persistence, tamper detection. Each test runs in its own binary, so shared helpers go in `tests/common/mod.rs`.
 
 ```rust
-// crates/awp-agents/tests/tampered_receipt.rs
+// crates/attestly-agents/tests/tampered_receipt.rs
 #[tokio::test]
 async fn verifier_rejects_post_signing_tamper() {
     let worker = KycWorker::with_identity(AgentIdentity::generate("worker"));
@@ -68,7 +68,7 @@ When changes touch any of:
 - `Attestation::signing_payload`
 - `KycRequest::canonical_bytes` (or any new `canonical_bytes` impl)
 - The audit viewer's JS verification path
-- The PyO3 bindings (`crates/awp-python/`)
+- The PyO3 bindings (`crates/attestly-python/`)
 
 the test must assert byte equality against a checked-in test vector, not just signature verification. Signature-verify-only tests can mask canonical-encoding drift that silently breaks cross-language verification in production. The Rust canonical encoding is the source of truth; JS and Python must match it bit-for-bit.
 

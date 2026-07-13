@@ -1,37 +1,37 @@
-# AWP Identity Layer Plan
+# Attestly Identity Layer Plan
 
 **Status:** Design accepted; v1 scope decisions locked (see §9). Not yet
 scheduled — the next step is to turn §9 into implementation issues in the
 #16–#24 format. In the same spirit as
-[`awp-prototype-plan.md`](awp-prototype-plan.md) and
+[`attestly-prototype-plan.md`](attestly-prototype-plan.md) and
 [`docs/DECISIONS.md`](../docs/DECISIONS.md). No code has been written against it.
 
-**Problem in one sentence:** an AWP attestation today proves *"the holder of
+**Problem in one sentence:** an Attestly attestation today proves *"the holder of
 this keypair signed this claim"* — it does **not** prove *who* that holder is,
 because `agent_pubkey` is bound to no real-world principal. This plan closes
-that gap without turning AWP into an identity provider.
+that gap without turning Attestly into an identity provider.
 
 ---
 
 ## 1. Guiding principle — plug in, don't own
 
-The market research is explicit about the boundary. `awp-market-research.md`
+The market research is explicit about the boundary. `attestly-market-research.md`
 §1.3 places "Agent identity / DIDs" (cheqd, Disco, Privado, World ID for
 agents, plus Auth0/Okta agent-identity products) in the **complementary**
-column, with the note: *"AWP needs identity, but doesn't need to own it."*
+column, with the note: *"Attestly needs identity, but doesn't need to own it."*
 Persona A — the revenue-bearing regulated buyer — wants *"signing keys
 controlled by them"* (§2.1).
 
 Two consequences drive every decision below:
 
-1. **AWP owns the *binding format and its verification*, not the *issuer*.**
+1. **Attestly owns the *binding format and its verification*, not the *issuer*.**
    We define a portable, signed record that says "key K belongs to principal
    P, per issuer I," and we verify the chain. The issuer can be an org's root
-   key, an Okta/Auth0 agent identity, a DID method, or a corporate CA — AWP
+   key, an Okta/Auth0 agent identity, a DID method, or a corporate CA — Attestly
    stays agnostic.
 2. **Do not build a registry, CA, or token.** Building our own identity
    system re-triggers the "this is crypto infra" positioning problem
-   (`awp-market-research.md` §2.3) and competes with well-funded incumbents.
+   (`attestly-market-research.md` §2.3) and competes with well-funded incumbents.
    A hosted *directory* of bindings is an optional convenience, never the
    root of trust.
 
@@ -41,14 +41,14 @@ Two consequences drive every decision below:
 
 Concrete, from the current code:
 
-- **`Attestation`** (`crates/awp-core/src/attestation.rs`) already carries
+- **`Attestation`** (`crates/attestly-core/src/attestation.rs`) already carries
   `agent_id: String`, `agent_pubkey: [u8; 32]`, and `signature: [u8; 64]`.
   Verifiers already chain claims via `references: Option<Uuid>`.
-- **`AgentIdentity` / `IdentityStore`** (`crates/awp-core/src/identity.rs`).
+- **`AgentIdentity` / `IdentityStore`** (`crates/attestly-core/src/identity.rs`).
   `IdentityStore` is a two-method trait (`load` / `save`) — the *storage*
   seam. `FileIdentityStore` is the only impl (plaintext, dev-only). Managed
   storage is tracked separately in issue #19.
-- **Hosted account binding** — `services/awp-cloud` authenticates ingest by
+- **Hosted account binding** — `services/attestly-cloud` authenticates ingest by
   API key → `AuthedAccount`, so the cloud already knows *"account X submitted
   this receipt."* This is a service-layer binding that does not survive the
   receipt leaving the hosted DB.
@@ -86,7 +86,7 @@ A signed, portable record binding a key to a principal:
 > Issuer I, at time T, authorizes key K to act as agent A (optionally: until
 > expiry E, for scope S).
 
-AWP defines the record's canonical format and verifies the signature chain
+Attestly defines the record's canonical format and verifies the signature chain
 from `agent_pubkey` up to an issuer key the relying party already trusts. The
 issuer is pluggable (org root key, DID, Okta/Auth0, corporate CA). This is
 the "own the format, plug the issuer" play, and it composes directly with the
@@ -106,7 +106,7 @@ specific partner needs a specific method — never speculatively.
 
 ### 4.1 Wire shape
 
-A new type in `awp-core` (name illustrative), canonicalized and signed the
+A new type in `attestly-core` (name illustrative), canonicalized and signed the
 same way `Attestation` is (serde field order + compact JSON — see
 `docs/DECISIONS.md` on the canonicalization convention; the same
 float/non-BMP caveats apply and should be pinned by a cross-language vector):
@@ -172,7 +172,7 @@ executions↔attestations (`docs/DECISIONS.md` D2.6). Concretely:
 
 - A sidecar **`bindings.jsonl`** next to the attestation stream for the
   `FileSink` path.
-- A dedicated **`/v1/bindings`** endpoint + table in `services/awp-cloud`,
+- A dedicated **`/v1/bindings`** endpoint + table in `services/attestly-cloud`,
   joined to attestations at read time, so a share-link can render "signed by
   key K, vouched for by Org O."
 - A relying party resolves-and-caches the binding for a given `agent_pubkey`
@@ -218,10 +218,10 @@ pulls:
 
 ## 7. Explicit non-goals
 
-- **No AWP-run CA or root of trust.** Relying parties choose their trusted
-  issuers. AWP ships verification, not authority.
+- **No Attestly-run CA or root of trust.** Relying parties choose their trusted
+  issuers. Attestly ships verification, not authority.
 - **No token, no on-chain identity registry.** Consistent with
-  `awp-market-research.md` Appendix A (token is "when, not if" — and not now)
+  `attestly-market-research.md` Appendix A (token is "when, not if" — and not now)
   and the deferred-anchoring posture. A binding is an off-chain signed record.
 - **No forced identity for local dev.** Level 0 stays the zero-config path;
   bindings are opt-in.
@@ -265,7 +265,7 @@ work and its trigger so nothing is silently dropped.
    fixed-shape struct we control, with no float fields, so the main
    canonicalization hazard does not arise. The residual risk (non-BMP Unicode
    in `subject_agent_id`/`scope`) is covered by a pinned cross-language vector
-   (mirroring `crates/awp-core/tests/cross_language_vector.rs`) plus
+   (mirroring `crates/attestly-core/tests/cross_language_vector.rs`) plus
    boundary validation/normalization of those string fields.
    *Deferred:* RFC 8785 JCS adoption.
    *Trigger:* when external parties sign **arbitrary/free-form** payloads

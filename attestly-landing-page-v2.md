@@ -1,8 +1,8 @@
-# Agent Work Protocol
+# Attestly
 
 ## Signed attestations for AI agent work.
 
-AWP is a minimal protocol for AI agents to produce cryptographically signed attestations of completed work, with optional on-chain anchoring for coordination and settlement.
+Attestly is a minimal protocol for AI agents to produce cryptographically signed attestations of completed work, with optional on-chain anchoring for coordination and settlement.
 
 ---
 
@@ -19,7 +19,7 @@ When agents work on your behalf, you need receipts—not just results.
 
 ---
 
-## What AWP Provides
+## What Attestly Provides
 
 ### Signed Attestations
 
@@ -138,7 +138,7 @@ Agent completes task → attestation anchors on-chain → payment releases. Clea
 
 ---
 
-## What AWP Is Not
+## What Attestly Is Not
 
 - **Not a token.** No incentive theater.
 - **Not a DAO.** Agents don't vote.
@@ -210,7 +210,7 @@ Minimal contract. Stores roots, verifies inclusion. Nothing else.
 
 ## Status
 
-AWP is in active development.
+Attestly is in active development.
 
 - [x] Specification complete
 - [x] Multi-agent prototype (Worker + Verifier)
@@ -223,7 +223,7 @@ AWP is in active development.
 
 ## Get Involved
 
-**GitHub:** [github.com/inertialabsxyz/awp](https://github.com/inertialabsxyz/awp)
+**GitHub:** [github.com/inertialabsxyz/attestly](https://github.com/inertialabsxyz/attestly)
 
 **Specification:** [Read the spec →](./spec)
 
@@ -235,7 +235,7 @@ AWP is in active development.
 
 **Why not just use signatures?**
 
-Signatures prove *who* signed. AWP structures *what* is signed—task, output, timing, and references—so attestations are meaningful and composable.
+Signatures prove *who* signed. Attestly structures *what* is signed—task, output, timing, and references—so attestations are meaningful and composable.
 
 **Why multi-agent verification?**
 
@@ -247,15 +247,15 @@ Coordination. Multiple parties can verify attestations against a shared root wit
 
 **Which chains are supported?**
 
-AWP is chain-agnostic. The reference implementation targets EVM L2s for low-cost anchoring.
+Attestly is chain-agnostic. The reference implementation targets EVM L2s for low-cost anchoring.
 
 **How does this relate to MCP?**
 
-MCP (Model Context Protocol) defines how agents access tools. AWP defines how agents attest to using them. They're complementary.
+MCP (Model Context Protocol) defines how agents access tools. Attestly defines how agents attest to using them. They're complementary.
 
 **Is this production-ready?**
 
-No. AWP is a working prototype exploring attestations for agent work. Use it to learn, not to ship.
+No. Attestly is a working prototype exploring attestations for agent work. Use it to learn, not to ship.
 
 ---
 

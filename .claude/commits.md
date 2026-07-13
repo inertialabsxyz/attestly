@@ -14,17 +14,17 @@
 
 Derived from the repo layout and existing history — match these exactly when possible:
 
-- **`core`** — `crates/awp-core/` (attestations, signing, identity, merkle, storage, kyc types)
-- **`agents`** — `crates/awp-agents/` (Worker, Verifier, Dispatcher, Batcher, KYC agents, tools)
-- **`examples`** — `crates/awp-examples/` (`simple_attestation`, `dispatcher_flow`, `kyc_receipts`, etc.)
+- **`core`** — `crates/attestly-core/` (attestations, signing, identity, merkle, storage, kyc types)
+- **`agents`** — `crates/attestly-agents/` (Worker, Verifier, Dispatcher, Batcher, KYC agents, tools)
+- **`examples`** — `crates/attestly-examples/` (`simple_attestation`, `dispatcher_flow`, `kyc_receipts`, etc.)
 - **`viewer`** — `tools/audit-viewer/` (the static HTML+JS audit viewer)
 - **`landing`** — `tools/landing-page/` (the marketing/pricing site)
 - **`compliance`** — `docs/compliance/` (SR 11-7 mapping and future regulation docs)
 - **`docs`** — other docs (`docs/ARCHITECTURE.md`, `docs/USER_JOURNEYS.md`, root `README.md`)
 - **`plan`** — anything under `planning/` (prototype plan, GTM plans, agent-prompts files)
-- **`python`** — `crates/awp-python/` (PyO3 bindings; lands in GTM Phase 2)
-- **`sdk`** — `python/awp-langgraph/` (LangGraph SDK; lands in GTM Phase 2)
-- **`cloud`** — `services/awp-cloud/` (hosted service; lands in GTM Phase 2)
+- **`python`** — `crates/attestly-python/` (PyO3 bindings; lands in GTM Phase 2)
+- **`sdk`** — `python/attestly-langgraph/` (LangGraph SDK; lands in GTM Phase 2)
+- **`cloud`** — `services/attestly-cloud/` (hosted service; lands in GTM Phase 2)
 - **`ci`** — `.github/workflows/`, Makefile, repo-wide tooling
 - **`deps`** — dependency-only changes (`Cargo.toml`, lockfiles)
 

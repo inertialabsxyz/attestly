@@ -1,4 +1,4 @@
-# AWP Prototype Development Plan
+# Attestly Prototype Development Plan
 
 **Duration:** 8 weeks  
 **Commitment:** 2-4 hours/week  
@@ -339,7 +339,7 @@ BatcherConfig {
 
 ### Goal
 
-Make informed decision on framework and direction for AWP Phase 2.
+Make informed decision on framework and direction for Attestly Phase 2.
 
 ### Evaluation Tasks
 
@@ -349,7 +349,7 @@ Make informed decision on framework and direction for AWP Phase 2.
 | Try MCP integration OR parallel workflow | 2-3 hrs | One hard thing |
 | Compare: what would this look like in swarms? | 1 hr | Mental exercise |
 | Compare: what if thin layer on Rig? | 1 hr | Mental exercise |
-| Update AWP spec with learnings | 1-2 hrs | Spec amendments |
+| Update Attestly spec with learnings | 1-2 hrs | Spec amendments |
 | Write DECISIONS.md | 1 hr | Document choices |
 
 ### Evaluation Criteria
@@ -392,7 +392,7 @@ Fill in after 6 weeks of experience.
 - [ ] One stretch task completed (MCP or parallel)
 - [ ] Comparison notes written
 - [ ] Framework decision made with rationale
-- [ ] AWP spec updated
+- [ ] Attestly spec updated
 - [ ] DECISIONS.md complete
 
 ---
@@ -400,12 +400,12 @@ Fill in after 6 weeks of experience.
 ## Repo Structure
 
 ```
-awp-prototype/
+attestly-prototype/
 ├── Cargo.toml
 ├── README.md
 │
 ├── crates/
-│   ├── awp-core/
+│   ├── attestly-core/
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── lib.rs
@@ -414,7 +414,7 @@ awp-prototype/
 │   │       ├── merkle.rs         # Tree construction, proofs
 │   │       └── storage.rs        # SQLite persistence
 │   │
-│   └── awp-agents/
+│   └── attestly-agents/
 │       ├── Cargo.toml
 │       └── src/
 │           ├── lib.rs
@@ -430,7 +430,7 @@ awp-prototype/
 │   └── full_pipeline.rs          # Week 5-6 checkpoint
 │
 ├── docs/
-│   ├── SPEC.md                   # AWP specification
+│   ├── SPEC.md                   # Attestly specification
 │   ├── DECISIONS.md              # Design decision log
 │   └── PAIN_POINTS.md            # Framework friction notes
 │
@@ -478,7 +478,7 @@ Keep a running log in `docs/DECISIONS.md`:
 | Scope creep | Medium | Medium | Strict phase boundaries |
 | Lose momentum | Medium | Medium | Small weekly deliverables |
 | Over-engineering | Low | Medium | No chain integration until Phase 2 |
-| Framework abandoned | Low | High | Minimal framework coupling in awp-core |
+| Framework abandoned | Low | High | Minimal framework coupling in attestly-core |
 
 ---
 
@@ -498,7 +498,7 @@ Keep a running log in `docs/DECISIONS.md`:
 1. **Working pipeline:** Task → Dispatcher → Worker → Verifier → Attestations → Batch
 2. **Data integrity:** Can verify any attestation's inclusion in batch given only the root
 3. **Clear decision:** Know which framework to build on (or build custom)
-4. **Updated spec:** AWP spec reflects learnings
+4. **Updated spec:** Attestly spec reflects learnings
 5. **Documented friction:** Know what's hard, not just what works
 
 ---
@@ -529,17 +529,17 @@ verifiers; we shipped parallel verifiers (Option B).
   across 4 phases — Phase 1: 6, Phase 2: 5, Phase 3: 6, Phase 4: 7
   (4 implementation + 3 docs).
 - **Source LOC:** ~5,500 total. ~4,500 in `crates/*/src/`, ~440 in
-  `crates/awp-agents/tests/`, ~560 in `examples/`.
+  `crates/attestly-agents/tests/`, ~560 in `examples/`.
 - **Documented pain points:** 12 friction items across PAIN_POINTS.md
   — 4 in Phase 1, 3 in Phase 2, 3 in Phase 3, plus a 5-point Phase 4
   synthesis at the top + a Phase 4 stretch-task entry at the bottom.
-- **Test count:** 79 passing tests (46 in `awp-core`, 33 in `awp-agents`)
-  plus 9 integration tests across `crates/awp-agents/tests/`.
+- **Test count:** 79 passing tests (46 in `attestly-core`, 33 in `attestly-agents`)
+  plus 9 integration tests across `crates/attestly-agents/tests/`.
 
 ### Stretch task chosen
 
 **Option B — parallel verifiers.** Implemented in
-`crates/awp-agents/src/parallel.rs` as `ParallelDispatcher` running N
+`crates/attestly-agents/src/parallel.rs` as `ParallelDispatcher` running N
 verifiers concurrently against one Worker via
 `futures::future::try_join_all`, with disagreement detection over
 `(attestation_valid, answer_correct)` tuples. Demonstrated in the new
@@ -584,7 +584,7 @@ Depending on decision:
 
 [LuaI](https://github.com/inertialabsxyz/luai) is a deterministic, sandboxed Lua VM designed for AI agent tool orchestration with ZK-provable execution traces. It provides a two-phase architecture: fast Lua execution for normal operation, with optional zkVM proving (RISC Zero/SP1) when cryptographic verification is required.
 
-Integrating LuaI as the execution layer for AWP agent tools would significantly strengthen the verification model.
+Integrating LuaI as the execution layer for Attestly agent tools would significantly strengthen the verification model.
 
 ### The Verification Problem
 

@@ -16,8 +16,8 @@
 
 use std::path::PathBuf;
 
-use awp_agents::{Verifier, VerifierAgent, Worker, WorkerAgent, WorkerTask};
-use awp_core::{append_attestation, load_attestations, AttestationStatus};
+use attestly_agents::{Verifier, VerifierAgent, Worker, WorkerAgent, WorkerTask};
+use attestly_core::{append_attestation, load_attestations, AttestationStatus};
 
 const ATTESTATIONS_PATH: &str = "data/attestations.json";
 

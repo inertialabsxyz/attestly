@@ -18,7 +18,7 @@
 //! cargo run --example full_pipeline
 //! ```
 //!
-//! The run is destructive: it deletes any existing `data/awp.db` so each
+//! The run is destructive: it deletes any existing `data/attestly.db` so each
 //! run starts from a known-empty database. The Phase 1/2 JSON logs
 //! (`data/attestations.json`, `data/executions.json`) are appended to as
 //! before — preserving the Phase 1/2 contract.
@@ -26,14 +26,14 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use awp_agents::{
+use attestly_agents::{
     Batcher, BatcherConfig, Dispatcher, DispatcherConfig, Verifier, Worker, WorkerTask,
 };
-use awp_core::Storage;
+use attestly_core::Storage;
 use rusqlite::{params, Connection};
 use uuid::Uuid;
 
-const DB_PATH: &str = "data/awp.db";
+const DB_PATH: &str = "data/attestly.db";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -163,16 +163,18 @@ fn list_batched_attestation_ids(db: &PathBuf) -> Result<Vec<Uuid>, Box<dyn std::
     Ok(ids)
 }
 
-fn short_status(status: &awp_core::ExecutionStatus) -> String {
+fn short_status(status: &attestly_core::ExecutionStatus) -> String {
     match status {
-        awp_core::ExecutionStatus::Pending => "Pending".into(),
-        awp_core::ExecutionStatus::WorkerRunning => "WorkerRunning".into(),
-        awp_core::ExecutionStatus::WorkerComplete => "WorkerComplete".into(),
-        awp_core::ExecutionStatus::VerifierRunning => "VerifierRunning".into(),
-        awp_core::ExecutionStatus::Complete {
+        attestly_core::ExecutionStatus::Pending => "Pending".into(),
+        attestly_core::ExecutionStatus::WorkerRunning => "WorkerRunning".into(),
+        attestly_core::ExecutionStatus::WorkerComplete => "WorkerComplete".into(),
+        attestly_core::ExecutionStatus::VerifierRunning => "VerifierRunning".into(),
+        attestly_core::ExecutionStatus::Complete {
             attestation_valid,
             answer_correct,
         } => format!("Complete{{av={attestation_valid},ac={answer_correct}}}"),
-        awp_core::ExecutionStatus::Failed { stage, reason } => format!("Failed[{stage}:{reason}]"),
+        attestly_core::ExecutionStatus::Failed { stage, reason } => {
+            format!("Failed[{stage}:{reason}]")
+        }
     }
 }

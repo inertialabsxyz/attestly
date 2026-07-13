@@ -1,5 +1,5 @@
 // Reconstruction of `Attestation::signing_payload` (see
-// `crates/awp-core/src/attestation.rs`) in JavaScript.
+// `crates/attestly-core/src/attestation.rs`) in JavaScript.
 //
 // Rust source-of-truth structure:
 //

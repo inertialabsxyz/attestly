@@ -1,6 +1,6 @@
-# AWP Process Overview
+# Attestly Process Overview
 
-A high-level walkthrough of how the AWP prototype works end-to-end. Companion to [`ARCHITECTURE.md`](ARCHITECTURE.md), which goes deeper into modules, types, and per-example swim lanes — read this first.
+A high-level walkthrough of how the Attestly prototype works end-to-end. Companion to [`ARCHITECTURE.md`](ARCHITECTURE.md), which goes deeper into modules, types, and per-example swim lanes — read this first.
 
 ## The 30-second version
 
@@ -40,7 +40,7 @@ flowchart TD
 
 - **Worker's signature** — "this specific agent claims this specific output for this specific task at this specific time." The signature is over a SHA-256 hash of all those fields, so tampering with any of them invalidates the signature.
 - **Verifier's signature on a `Verified` status** — "I, a different agent, independently checked the Worker's crypto and re-solved the task. Here are my two verdicts as separate booleans." The two verdicts are independent: an attestation can be cryptographically valid but produce the wrong answer, or the answer can match but the signature was forged.
-- **Merkle root + inclusion proof** — "this attestation was part of this batch." A 1000-attestation batch is summarised by a single 32-byte root; proving any one attestation belongs to it costs ~10 hashes. This is what makes on-chain anchoring practical (deferred to Phase 2-of-AWP) — you'd anchor one root per batch, not one transaction per attestation.
+- **Merkle root + inclusion proof** — "this attestation was part of this batch." A 1000-attestation batch is summarised by a single 32-byte root; proving any one attestation belongs to it costs ~10 hashes. This is what makes on-chain anchoring practical (deferred to Phase 2-of-Attestly) — you'd anchor one root per batch, not one transaction per attestation.
 
 ## The two coordination shapes that ship
 
@@ -54,7 +54,7 @@ Three deliberate, scope-deferred gaps and one emergent framework gap.
 ### Deliberate scope deferrals
 
 - **No LLM is called.** The Worker uses a built-in `calculate` tool (a recursive-descent arithmetic parser) so the system is hermetic and runs in CI without API keys.
-- **No blockchain.** `Batch.anchor_tx` exists as a column but is always `NULL`; on-chain anchoring is Phase 2-of-AWP.
+- **No blockchain.** `Batch.anchor_tx` exists as a column but is always `NULL`; on-chain anchoring is Phase 2-of-Attestly.
 - **No persistent agent identity.** Each Worker/Verifier generates a fresh ed25519 keypair on construction. Persistence and key rotation are deferred.
 
 ### Emergent gap surfaced by Phase 4

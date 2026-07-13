@@ -1,4 +1,4 @@
-# AWP — Landing Page (thinking draft)
+# Attestly — Landing Page (thinking draft)
 
 A founder-facing landing page. Not for buyers. Not for the eventual public marketing site. The purpose of this document is to force one coherent pitch into ~600 words so the gaps in conviction become visible.
 
@@ -20,7 +20,7 @@ You can show them application logs. Those logs say what your *server* thinks the
 
 This is fine until it isn't. The moment an examiner, a disputant, or a counterparty asks for proof — not records, *proof* — application logs become exhibits of your honour system, not your controls.
 
-## What AWP gives you
+## What Attestly gives you
 
 Three things, none of them speculative:
 
@@ -36,9 +36,9 @@ Three specific outcomes, one per buyer:
 
 - **Compliance officer at a regulated firm:** the difference between a clean SR 11-7 examination and a finding. *"Show me what your agent did and prove it"* moves from a problem to a one-click answer. The pay-for is the six-figure remediation cost of a finding that didn't happen.
 
-- **Platform operator running agent commerce:** the resolved dispute. When a buyer says *"the agent didn't do what I paid for"*, the receipt is the evidence. Today you absorb the dispute or lose the customer. With AWP, the receipt closes it. The pay-for is a percentage of disputed revenue that previously evaporated.
+- **Platform operator running agent commerce:** the resolved dispute. When a buyer says *"the agent didn't do what I paid for"*, the receipt is the evidence. Today you absorb the dispute or lose the customer. With Attestly, the receipt closes it. The pay-for is a percentage of disputed revenue that previously evaporated.
 
-- **Counterparty in a cross-party agent workflow:** the answer to *"I don't trust your logs."* AWP attestations are signed by the agent, not by your platform — so a third party can verify them without trusting you. The pay-for is the deals that previously stalled at procurement because *"we don't know what their agent actually did."*
+- **Counterparty in a cross-party agent workflow:** the answer to *"I don't trust your logs."* Attestly attestations are signed by the agent, not by your platform — so a third party can verify them without trusting you. The pay-for is the deals that previously stalled at procurement because *"we don't know what their agent actually did."*
 
 ## What it looks like
 
@@ -50,14 +50,14 @@ Customer #8842 — Decision: FLAG        signature ✓  verdict ✓
 Customer #9999 — Decision: FLAG        signature ✗ — receipt rejected
 ```
 
-The third row is a tampered receipt. The Verifier caught it. If application logs were the only record, customer #9999's FLAG could have been quietly changed to APPROVE and no one would know. AWP makes that class of edit impossible to hide.
+The third row is a tampered receipt. The Verifier caught it. If application logs were the only record, customer #9999's FLAG could have been quietly changed to APPROVE and no one would know. Attestly makes that class of edit impossible to hide.
 
 Open the audit viewer in a browser, drag the receipt files in, and every signature is re-verified locally. The viewer is 800 lines of static HTML. There is no server.
 
-## What AWP is not
+## What Attestly is not
 
-- **Not a replacement for your observability stack.** Datadog, LangSmith, Helicone — these answer *what happened on my infrastructure*. AWP answers *what did the agent claim, and can I prove it*. Complementary, not competing.
-- **Not a judgement on whether the agent's answer was right.** AWP attests to what was claimed, not to whether the claim is correct under your business rules. Model validation is your job; AWP makes the claims auditable.
+- **Not a replacement for your observability stack.** Datadog, LangSmith, Helicone — these answer *what happened on my infrastructure*. Attestly answers *what did the agent claim, and can I prove it*. Complementary, not competing.
+- **Not a judgement on whether the agent's answer was right.** Attestly attests to what was claimed, not to whether the claim is correct under your business rules. Model validation is your job; Attestly makes the claims auditable.
 - **Not on-chain AI.** Optional Merkle root anchoring exists for use cases that need it (cross-party agent networks, settlement). Most buyers will never anchor anything on a chain, and that's fine — the protocol works without one.
 - **Not a token, not a DAO, not a reputation score.** No tokenomics. No governance theatre. No "stake to verify." Just signatures and hashes.
 

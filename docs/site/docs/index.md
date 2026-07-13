@@ -1,9 +1,9 @@
-# AWP — Agent Work Protocol
+# Attestly
 
 **Signed, verifiable attestations of what your AI agents actually did.**
 
 When agents work on your behalf, you need receipts — not just results.
-AWP is a minimal protocol that signs every agent decision at the moment
+Attestly is a minimal protocol that signs every agent decision at the moment
 of execution and stores it in a tamper-evident log that auditors,
 counterparties, and your compliance lead can verify without trusting
 you.
@@ -26,7 +26,7 @@ you.
 
 </div>
 
-## Where AWP sits
+## Where Attestly sits
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -40,7 +40,7 @@ you.
 ├──────────────────────────────────────────────────────────────┤
 │ Observability         LangSmith · Helicone · Arize · Lang…  │
 ├──────────────────────────────────────────────────────────────┤
-│ Trust (AWP)           Signed receipts · Worker/Verifier ·   │
+│ Trust (Attestly)           Signed receipts · Worker/Verifier ·   │
 │                       tamper-evident retention              │
 ├──────────────────────────────────────────────────────────────┤
 │ Payments              Stripe Agent Toolkit · Skyfire · x402 │
@@ -48,19 +48,19 @@ you.
 ```
 
 Identity tells you *who acted*. Observability tells you *what happened
-on your infrastructure*. AWP tells you *what the agent claimed, signed
+on your infrastructure*. Attestly tells you *what the agent claimed, signed
 at the source, and proves the claim wasn't edited after the fact.*
 
 ## Two ways to run it
 
-- **Self-hosted (OSS, $0)** — `awp-langgraph` writes JSONL to a local
+- **Self-hosted (OSS, $0)** — `attestly-langgraph` writes JSONL to a local
   `FileSink`. The [static audit viewer](self-hosted.md) re-verifies
   every signature in the browser. Works offline forever.
-- **AWP Cloud (Team / Enterprise)** — the same signed receipts,
+- **Attestly Cloud (Team / Enterprise)** — the same signed receipts,
   shipped via `CloudSink` to a hosted retention service with search,
   share links, one-year (Team) or seven-year (Enterprise) retention,
   and one-command export. See the
-  [pricing page](https://awp-cloud.xyz/#pricing) for the tiers.
+  [pricing page](https://attestly.xyz/#pricing) for the tiers.
 
 You can [migrate from `FileSink` to `CloudSink`](migration.md) without
 losing a single attestation — the receipts you produced offline import
@@ -68,7 +68,7 @@ cleanly into the cloud.
 
 ## For regulated buyers
 
-The [Compliance](compliance.md) section maps AWP onto SR 11-7 model
+The [Compliance](compliance.md) section maps Attestly onto SR 11-7 model
 governance requirements. If your auditor needs a deployment-specific
 mapping, that conversation lives in the design-partner programme
 described in `planning/gtm-phase-2-plan.md` Step 6.

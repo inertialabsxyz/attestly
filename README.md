@@ -1,8 +1,8 @@
-# AWP — Agent Work Protocol
+# Attestly
 
 **Signed attestations for AI agent work.**
 
-AWP is a minimal protocol for AI agents to produce cryptographically
+Attestly is a minimal protocol for AI agents to produce cryptographically
 signed attestations of completed work. It is designed to support
 optional on-chain anchoring for coordination and settlement — that
 anchoring is a roadmap item, not yet implemented (see [Roadmap](#roadmap)).
@@ -12,31 +12,31 @@ When agents work on your behalf, you need receipts — not just results.
 ## Install
 
 The LangGraph SDK is not yet published to a package index — install it
-from this repository. It sits on `awp-core-py`, the PyO3 bindings to the
+from this repository. It sits on `attestly-core-py`, the PyO3 bindings to the
 Rust signing core, which you build locally with
 [`maturin`](https://www.maturin.rs):
 
 ```bash
-git clone https://github.com/inertialabsxyz/awp
-cd awp
+git clone https://github.com/inertialabsxyz/attestly
+cd attestly
 
 python -m venv .venv && source .venv/bin/activate
 pip install --upgrade pip   # editable installs need pip >= 21.3
 pip install maturin
 
-# Build the Rust signing core into the venv as `awp-core-py`.
-maturin develop --manifest-path crates/awp-python/Cargo.toml --release
+# Build the Rust signing core into the venv as `attestly-core-py`.
+maturin develop --manifest-path crates/attestly-python/Cargo.toml --release
 
-# Install the LangGraph SDK in editable mode (--no-deps: awp-core-py is
+# Install the LangGraph SDK in editable mode (--no-deps: attestly-core-py is
 # already built above; langgraph is installed on the next line).
-pip install --no-deps -e python/awp-langgraph
+pip install --no-deps -e python/attestly-langgraph
 pip install langgraph
 ```
 
 Then wrap any LangGraph `StateGraph` in one line:
 
 ```python
-from awp.langgraph import attest
+from attestly.langgraph import attest
 from langgraph.graph import StateGraph
 
 graph = build_my_graph()                       # your existing StateGraph
@@ -51,7 +51,7 @@ share-links.
 
 SDK reference, sink configuration, dual-agent mode, and the
 anonymous-telemetry opt-out are documented in
-[`python/awp-langgraph/README.md`](python/awp-langgraph/README.md).
+[`python/attestly-langgraph/README.md`](python/attestly-langgraph/README.md).
 The documentation site source (quickstart, concepts, self-hosted path,
 compliance pointers) lives under [`docs/site/`](docs/site/).
 
@@ -92,7 +92,7 @@ anchoring step is not yet built.
 - **Identity over keys.** Stable identity across key rotations, with
   lineage and operator accountability.
 
-## What AWP is not
+## What Attestly is not
 
 Not a token. Not a DAO. Not on-chain AI. Not a reputation score.
 
@@ -107,8 +107,8 @@ later.
 
 Rust core — Ed25519 signing, SHA-256 hashing, `rs_merkle` for batching,
 SQLite for persistence. The Python SDK sits on top via PyO3 bindings
-([`crates/awp-python/`](crates/awp-python/)). The hosted service is Rust
-+ Axum + Postgres ([`services/awp-cloud/`](services/awp-cloud/)).
+([`crates/attestly-python/`](crates/attestly-python/)). The hosted service is Rust
++ Axum + Postgres ([`services/attestly-cloud/`](services/attestly-cloud/)).
 
 ## Audit viewer
 
@@ -128,7 +128,7 @@ byte-for-byte. Use them to understand the protocol; use the Python
 SDK above to integrate.
 
 Examples live in
-[`crates/awp-examples/examples/`](crates/awp-examples/examples/) and run
+[`crates/attestly-examples/examples/`](crates/attestly-examples/examples/) and run
 with `cargo run --example <name>`. Each appends to
 `data/attestations.json` and `data/executions.json` so you can re-run
 them and inspect the growing log.

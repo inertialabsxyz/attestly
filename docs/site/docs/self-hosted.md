@@ -1,6 +1,6 @@
 # Self-hosted
 
-AWP is open source, MIT/Apache-2.0 dual-licensed, and the SDK is fully
+Attestly is open source, MIT/Apache-2.0 dual-licensed, and the SDK is fully
 functional without any cloud dependency. This page is the OSS-only
 path: signed receipts written to a local file, re-verified by a static
 HTML viewer in your browser. No account, no network call, no us.
@@ -19,7 +19,7 @@ HTML viewer in your browser. No account, no network call, no us.
 ## Five lines
 
 ```python title="self_hosted_snippet.py"
-from awp.langgraph import attest, FileSink
+from attestly.langgraph import attest, FileSink
 from langgraph.graph import StateGraph
 
 graph = build_my_graph()
@@ -34,7 +34,7 @@ paths stay out of git (`data/` is gitignored).
 ## The static audit viewer
 
 Open
-[`tools/audit-viewer/index.html`](https://github.com/inertialabsxyz/awp/tree/main/tools/audit-viewer)
+[`tools/audit-viewer/index.html`](https://github.com/inertialabsxyz/attestly/tree/main/tools/audit-viewer)
 in a browser. Drag your `attestations.jsonl` onto the drop zone. The
 viewer:
 
@@ -53,8 +53,8 @@ intended deployment for the regulated-buyer story.
 The Rust workspace ships a complete demo:
 
 ```bash
-git clone https://github.com/inertialabsxyz/awp
-cd awp
+git clone https://github.com/inertialabsxyz/attestly
+cd attestly
 
 # Worker → Verifier round-trip with persistent identities.
 cargo run --example kyc_receipts
@@ -68,9 +68,9 @@ You'll see three rows. The third — the tampered scenario — flips red
 on load. The Worker's signature does not match the post-tamper bytes,
 and the in-browser verifier catches it.
 
-## What you give up vs. AWP Cloud
+## What you give up vs. Attestly Cloud
 
-| Feature | Self-hosted | AWP Cloud |
+| Feature | Self-hosted | Attestly Cloud |
 |---|---|---|
 | Signed receipts | ✓ | ✓ |
 | In-browser verification | ✓ | ✓ |

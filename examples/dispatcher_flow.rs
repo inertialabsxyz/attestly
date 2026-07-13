@@ -19,10 +19,10 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use awp_agents::{
+use attestly_agents::{
     Dispatcher, DispatcherConfig, Verifier, Worker, WorkerAgent, WorkerError, WorkerTask,
 };
-use awp_core::{AgentKeypair, Attestation, AttestationStatus, ExecutionStatus, TaskExecution};
+use attestly_core::{AgentKeypair, Attestation, AttestationStatus, ExecutionStatus, TaskExecution};
 
 /// Wraps another worker and sleeps before delegating, used to drive the
 /// dispatcher's worker-stage timeout path.
@@ -55,7 +55,7 @@ impl WorkerAgent for WrongAnswerWorker {
         // re-solve disagrees.
         let mut a = Attestation::new(
             "wrong-answer-worker",
-            awp_core::sha256(task.canonical_bytes()),
+            attestly_core::sha256(task.canonical_bytes()),
             self.forced_output.clone(),
             AttestationStatus::Completed,
             None,
@@ -86,7 +86,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         let dispatcher = Dispatcher::new(DispatcherConfig::standard().with_timeouts(
             Duration::from_millis(200),
-            awp_agents::DEFAULT_STAGE_TIMEOUT,
+            attestly_agents::DEFAULT_STAGE_TIMEOUT,
         ));
         let slow_worker = DelayedWorker {
             inner: Worker::new("worker-1-slow"),
