@@ -1,7 +1,8 @@
 # AWP Identity Layer Plan
 
-**Status:** Design proposal — not yet scheduled. This document is the input
-to a human decision on scope and sequencing, in the same spirit as
+**Status:** Design accepted; v1 scope decisions locked (see §9). Not yet
+scheduled — the next step is to turn §9 into implementation issues in the
+#16–#24 format. In the same spirit as
 [`awp-prototype-plan.md`](awp-prototype-plan.md) and
 [`docs/DECISIONS.md`](../docs/DECISIONS.md). No code has been written against it.
 
@@ -163,12 +164,22 @@ a valid Level-0 receipt, just not an accountable one.
 
 ### 4.3 Where bindings travel
 
-- Alongside attestations in the JSONL/`FileSink` stream (a new line kind, or
-  a sidecar file).
-- Ingested and served by `services/awp-cloud` next to attestations, so a
-  share-link can render "signed by key K, vouched for by Org O."
+A binding is issued **once** and reused across thousands of attestations from
+the same key, so it lives on its **own channel** — never inlined per
+attestation (that would duplicate it massively and couple two different
+lifecycles). This mirrors the id-reference/join pattern already used for
+executions↔attestations (`docs/DECISIONS.md` D2.6). Concretely:
+
+- A sidecar **`bindings.jsonl`** next to the attestation stream for the
+  `FileSink` path.
+- A dedicated **`/v1/bindings`** endpoint + table in `services/awp-cloud`,
+  joined to attestations at read time, so a share-link can render "signed by
+  key K, vouched for by Org O."
+- A relying party resolves-and-caches the binding for a given `agent_pubkey`
+  once, rather than re-reading it per receipt.
 - Verified by `tools/audit-viewer` with the **same** offline ed25519 path —
-  this is a hard requirement, not a nice-to-have.
+  the viewer loads bindings from the sidecar and renders the issuer chain per
+  row. This is a hard requirement, not a nice-to-have.
 
 ---
 
@@ -235,18 +246,50 @@ pulls:
 
 ---
 
-## 9. Open questions for the human
+## 9. Resolved decisions (v1)
 
-1. **Level 2 scope for v1:** binding record + `IssuerRef::Key` verification
-   only, or include the `External`/Okta resolver in the first cut?
-2. **Canonicalization:** stay on the serde-order convention (and pin a
-   cross-language binding vector), or take the identity work as the moment to
-   adopt RFC 8785 JCS for anything third parties will sign? (See the
-   `docs/DECISIONS.md` canonicalization caveat.)
-3. **Binding transport:** inline in the attestation stream, or a separate
-   `bindings.jsonl` / endpoint?
-4. **Revocation:** out of scope for v1 (rely on short `expires_at`), or is a
-   revocation signal a day-one requirement for the target design partner?
+The four scoping questions are settled as follows. Each names the deferred
+work and its trigger so nothing is silently dropped.
 
-Once these are answered, this plan becomes a set of issues in the same
-format as the shipping-blocker backlog (#16–#24).
+1. **Level 2 scope — `IssuerRef::Key` only.** The `IssuerRef` enum ships with
+   all three variants defined (`Key`, `Did`, `External`) so the shape is
+   future-proof, but only the raw org-root-key path is *implemented* in v1.
+   This fully solves the single-org design-partner case (an org signs
+   bindings with one issuer key and distributes the public half out of band)
+   with zero external dependencies.
+   *Deferred:* `External` (Okta/Auth0) and `Did` resolvers.
+   *Trigger:* a named partner requiring that specific issuer.
+
+2. **Canonicalization — keep the serde-order convention; pin a cross-language
+   binding vector; constrain the string fields.** `IdentityBinding` is a
+   fixed-shape struct we control, with no float fields, so the main
+   canonicalization hazard does not arise. The residual risk (non-BMP Unicode
+   in `subject_agent_id`/`scope`) is covered by a pinned cross-language vector
+   (mirroring `crates/awp-core/tests/cross_language_vector.rs`) plus
+   boundary validation/normalization of those string fields.
+   *Deferred:* RFC 8785 JCS adoption.
+   *Trigger:* when external parties sign **arbitrary/free-form** payloads
+   (not the case at L2). See the `docs/DECISIONS.md` canonicalization caveat.
+
+3. **Transport — separate channel** (`bindings.jsonl` sidecar + `/v1/bindings`
+   endpoint, joined at read time). Bindings are never inlined per
+   attestation. Rationale and mechanics in §4.3.
+
+4. **Revocation — expiry-based only in v1.** `expires_at` is mandatory with a
+   recommended short maximum (≤90 days); revocation is "let it expire and
+   reissue." This keeps offline verification (the audit-viewer) fully
+   self-contained with no network dependency.
+   *Deferred:* a hosted revocation signal (a "revoked" list on the cloud,
+   for the online path only; offline stays expiry-based).
+   *Trigger:* the first regulated partner with a hard key-compromise-response
+   SLA that short expiry cannot satisfy.
+
+**Net v1 shape:** binding record + `Key`-issuer verification, serde-canonical
+with a pinned cross-language vector, transported on a separate
+`bindings.jsonl`/endpoint, expiry-based revocation. Minimal,
+offline-verifiable, single-org-accountable — every deferred piece (Okta, DID,
+JCS, revocation lists) has a named trigger.
+
+**Next step:** turn this section into a set of issues in the same format as
+the shipping-blocker backlog (#16–#24), sequenced after issue #19 (managed
+`IdentityStore`) per §8.
