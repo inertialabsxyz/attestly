@@ -405,7 +405,7 @@ impl Db for MemDb {
                 .filter(|a| a.account_id == account_id)
                 .cloned()
                 .collect();
-            rows.sort_by(|a, b| a.received_at.cmp(&b.received_at));
+            rows.sort_by_key(|a| a.received_at);
             rows
         })
     }
