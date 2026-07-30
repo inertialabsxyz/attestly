@@ -1,6 +1,6 @@
 # LangGraph integration
 
-`awp-langgraph` is a one-line wrapper around any LangGraph `StateGraph`
+`attestly-langgraph` is a one-line wrapper around any LangGraph `StateGraph`
 that emits a signed attestation per node execution. The wrap is
 behaviour-preserving — same node outputs, same routing, same error
 propagation.
@@ -8,16 +8,16 @@ propagation.
 ## Install
 
 ```bash
-pip install awp-langgraph
+pip install attestly-langgraph
 ```
 
-Pulls in `awp-core-py` (the PyO3 bindings to the Rust signing core)
-transitively. `awp-langgraph` is pure-Python on top.
+Pulls in `attestly-core-py` (the PyO3 bindings to the Rust signing core)
+transitively. `attestly-langgraph` is pure-Python on top.
 
 ## The five lines
 
 ```python title="One-line integration"
-from awp.langgraph import attest
+from attestly.langgraph import attest
 from langgraph.graph import StateGraph
 
 graph = build_my_graph()
@@ -33,14 +33,14 @@ Defaults:
   `./data/identities/<agent_id>.json` if present, otherwise generated
   and saved on first use.
 - **Telemetry** — anonymous daily aggregate on by default, opt-out via
-  `AWP_TELEMETRY=0`. See the [telemetry section](#telemetry) below.
+  `ATTESTLY_TELEMETRY=0`. See the [telemetry section](#telemetry) below.
 
 ## Sinks
 
 ### `FileSink(path)`
 
 ```python
-from awp.langgraph import attest, FileSink
+from attestly.langgraph import attest, FileSink
 
 graph = attest(graph, agent_id="local-dev", sink=FileSink("./receipts.jsonl"))
 ```
@@ -54,17 +54,17 @@ without a server.
 
 ```python
 import os
-from awp.langgraph import attest, CloudSink
+from attestly.langgraph import attest, CloudSink
 
 graph = attest(
     graph,
     agent_id="prod-kyc-01",
-    sink=CloudSink(api_key=os.environ["AWP_API_KEY"]),
+    sink=CloudSink(api_key=os.environ["ATTESTLY_API_KEY"]),
 )
 ```
 
-POSTs each attestation to `https://api.awp-cloud.xyz/v1/attestations`
-per the [hosted ingest API contract](https://github.com/inertialabsxyz/awp/blob/main/services/awp-cloud/API.md).
+POSTs each attestation to `https://api.attestly.xyz/v1/attestations`
+per the [hosted ingest API contract](https://github.com/inertialabsxyz/attestly/blob/main/services/attestly-cloud/API.md).
 Retries on `5xx` with exponential backoff (three attempts max).
 A `422 signature_invalid` response raises a loud Python exception —
 that indicates the SDK is broken, not the network.
@@ -72,7 +72,7 @@ that indicates the SDK is broken, not the network.
 ### `CallableSink(fn)`
 
 ```python
-from awp.langgraph import attest, CallableSink
+from attestly.langgraph import attest, CallableSink
 
 def my_sink(attestation):
     queue.publish("audit", attestation.to_json())
@@ -90,8 +90,8 @@ The SDK reads `AgentIdentity` from
 landed in GTM Phase 1 Step 3. Override with an explicit object:
 
 ```python
-from awp import AgentIdentity
-from awp.langgraph import attest
+from attestly import AgentIdentity
+from attestly.langgraph import attest
 
 identity = AgentIdentity.load_or_create("./data/identities", "my-agent-01")
 graph = attest(graph, agent_id="my-agent-01", identity=identity)
@@ -122,7 +122,7 @@ Sequential in v0.1; parallel verifier execution is a v0.2 nice-to-have.
 ## Telemetry
 
 The SDK reports a small daily aggregate to
-`https://telemetry.awp-cloud.xyz/v1/usage` containing:
+`https://telemetry.attestly.xyz/v1/usage` containing:
 
 ```json
 {"install_id": "<uuid generated on first import>",
@@ -135,18 +135,18 @@ The SDK reports a small daily aggregate to
 
 That is the entire payload. No payload data, no agent ids, no customer
 ids, no user identifiers beyond the install UUID. The UUID is generated
-locally on first import and lives at `~/.config/awp/install_id`.
+locally on first import and lives at `~/.config/attestly/install_id`.
 
 Opt out with either:
 
 ```bash
-export AWP_TELEMETRY=0
+export ATTESTLY_TELEMETRY=0
 ```
 
 or, programmatically:
 
 ```python
-from awp.langgraph import telemetry_disable
+from attestly.langgraph import telemetry_disable
 telemetry_disable()
 ```
 
@@ -160,7 +160,7 @@ The package ships two runnable examples:
 
 - `examples/quickstart_snippet.py` — the same five lines the
   [Quickstart](quickstart.md) walks through, wrapping a minimal one-node
-  `StateGraph`. Runs against `CloudSink` when `AWP_API_KEY` is set, and
+  `StateGraph`. Runs against `CloudSink` when `ATTESTLY_API_KEY` is set, and
   falls back to `FileSink` otherwise so it works offline.
 - `examples/kyc_graph.py` — a full KYC graph with three scenarios
   (Approve, Flag, and a dual-agent disagreement), the LangGraph port of

@@ -1,20 +1,20 @@
-# AWP Demo Runbook
+# Attestly Demo Runbook
 
-An internal presenter guide for demoing AWP. Two parts:
+An internal presenter guide for demoing Attestly. Two parts:
 
 - **Demo A** — the LangGraph wedge and in-browser receipt verification. No
   Docker. ~5 minutes. This is the headline; it tells the whole story on its own.
-- **Demo B** — the hosted `awp-cloud` surface (retention, search, share-links).
+- **Demo B** — the hosted `attestly-cloud` surface (retention, search, share-links).
   Needs Docker. ~5 minutes more.
 
 Every command below was run and verified. Paths assume the repo root
-`/Users/andybell/devel/awp` — adjust if your checkout differs.
+`/Users/andybell/devel/attestly` — adjust if your checkout differs.
 
 ## Prerequisites
 
 - A Python virtualenv at `.venv/` with the SDK installed. The examples insert
-  the in-tree SDK onto `sys.path`, so `awp-core-py` (`maturin develop` in
-  `crates/awp-python/`) and `langgraph` are the only hard installs.
+  the in-tree SDK onto `sys.path`, so `attestly-core-py` (`maturin develop` in
+  `crates/attestly-python/`) and `langgraph` are the only hard installs.
 - For Demo B only: Docker running.
 
 ---
@@ -24,7 +24,7 @@ Every command below was run and verified. Paths assume the repo root
 ### Setup (before the audience is watching)
 
 ```bash
-cd /Users/andybell/devel/awp
+cd /Users/andybell/devel/attestly
 make check                       # confirm the build is green
 rm -f data/attestations.jsonl    # clean slate so the viewer starts empty
 ```
@@ -32,7 +32,7 @@ rm -f data/attestations.jsonl    # clean slate so the viewer starts empty
 ### Step 1 — Run the agent
 
 ```bash
-.venv/bin/python python/awp-langgraph/examples/kyc_graph.py
+.venv/bin/python python/attestly-langgraph/examples/kyc_graph.py
 ```
 
 Three scenarios print:
@@ -79,12 +79,12 @@ Click any row to expand it — each receipt shows
 
 ---
 
-## Demo B — The hosted `awp-cloud` surface
+## Demo B — The hosted `attestly-cloud` surface
 
 ### Step 4 — Bring up the stack
 
 ```bash
-make -C services/awp-cloud up      # first build ~5 min; subsequent runs fast
+make -C services/attestly-cloud up      # first build ~5 min; subsequent runs fast
 ```
 
 Confirm it is healthy:
@@ -97,33 +97,33 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/healthz
 ### Step 5 — Seed an account and capture the API key
 
 ```bash
-make -C services/awp-cloud seed
+make -C services/attestly-cloud seed
 ```
 
-The seed inserts 10k synthetic attestations and prints `export AWP_API_KEY=...`.
+The seed inserts 10k synthetic attestations and prints `export ATTESTLY_API_KEY=...`.
 The `seed@local.test` account is reused across runs; each run mints a fresh
 API key, so copy the latest one. Export it into your shell:
 
 ```bash
-export AWP_API_KEY=<key from the seed output>
+export ATTESTLY_API_KEY=<key from the seed output>
 ```
 
 ### Step 6 — Ship attestations from the SDK to the cloud
 
 ```bash
-AWP_CLOUD_ENDPOINT=http://localhost:8080 \
-  .venv/bin/python python/awp-langgraph/examples/kyc_graph.py --sink cloud
+ATTESTLY_CLOUD_ENDPOINT=http://localhost:8080 \
+  .venv/bin/python python/attestly-langgraph/examples/kyc_graph.py --sink cloud
 ```
 
-> The SDK reads `AWP_API_KEY` from the environment — the same variable the
-> seed output exports. `AWP_CLOUD_ENDPOINT` is **required**: without it the
+> The SDK reads `ATTESTLY_API_KEY` from the environment — the same variable the
+> seed output exports. `ATTESTLY_CLOUD_ENDPOINT` is **required**: without it the
 > SDK targets the placeholder production domain, which does not resolve. With
 > a bad key the example crashes loudly with a traceback — that is by design.
 
 ### Step 7 — Show they landed, searchably
 
 ```bash
-curl -s -H "x-api-key: $AWP_API_KEY" \
+curl -s -H "x-api-key: $ATTESTLY_API_KEY" \
   'http://localhost:8080/v1/attestations?limit=10' | python3 -m json.tool
 ```
 
@@ -142,7 +142,7 @@ and re-verifies every signature in the browser:
 
 ```bash
 # Grab a couple of attestation ids from the search in Step 7, then:
-curl -s -X POST -H "x-api-key: $AWP_API_KEY" \
+curl -s -X POST -H "x-api-key: $ATTESTLY_API_KEY" \
   -H 'content-type: application/json' \
   -d '{"attestation_ids": ["<id-1>", "<id-2>"]}' \
   http://localhost:8080/v1/share-links
@@ -161,13 +161,13 @@ curl -s -X POST -H "x-api-key: $AWP_API_KEY" \
 
 ```bash
 # Full clean restart (wipes data, re-seeds):
-make -C services/awp-cloud down
-docker volume rm awp-cloud_pg-data awp-cloud_blob-data
-make -C services/awp-cloud up
-make -C services/awp-cloud seed        # prints a new AWP_API_KEY
+make -C services/attestly-cloud down
+docker volume rm attestly-cloud_pg-data attestly-cloud_blob-data
+make -C services/attestly-cloud up
+make -C services/attestly-cloud seed        # prints a new ATTESTLY_API_KEY
 
 # Just stop when done:
-make -C services/awp-cloud down
+make -C services/attestly-cloud down
 ```
 
 ---

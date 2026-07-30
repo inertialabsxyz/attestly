@@ -1,0 +1,70 @@
+# Local development stack for `attestly-cloud`.
+#
+# Brings up:
+#  - Postgres 16 with a persisted volume
+#  - The `attestly-cloud` API server, built from the local Dockerfile
+#  - Minio (S3-compatible) — defined for parity with the staging deploy. The
+#    in-cluster `attestly-cloud` defaults to a filesystem blob store mounted to a
+#    docker volume; flip `BLOB_BACKEND=s3` (plus the matching env vars) when
+#    the S3 blob impl lands.
+#
+# Usage:
+#   docker compose up -d
+#   docker compose exec attestly-cloud /usr/local/bin/attestly-cloud-seed   # 10k attestations
+#
+# Stop and wipe state:
+#   docker compose down -v
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: attestly
+      POSTGRES_PASSWORD: attestly
+      POSTGRES_DB: attestly_cloud
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U attestly -d attestly_cloud"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  minio:
+    image: quay.io/minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: miniominio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+  attestly-cloud:
+    build:
+      context: ../..
+      dockerfile: services/attestly-cloud/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://attestly:attestly@postgres:5432/attestly_cloud
+      BLOB_ROOT: /var/lib/attestly-cloud/blobs
+      BIND_ADDR: 0.0.0.0:8080
+      RUST_LOG: info,attestly_cloud=debug
+      # Placeholder so the service boots for local demos. Billing endpoints
+      # will 401 against real Stripe — set a real test key to exercise them.
+      STRIPE_API_KEY: sk_test_local_demo_placeholder
+    ports:
+      - "8080:8080"
+    volumes:
+      - blob-data:/var/lib/attestly-cloud/blobs
+
+volumes:
+  pg-data:
+  minio-data:
+  blob-data:

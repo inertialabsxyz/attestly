@@ -1,7 +1,7 @@
-# `docs/site/` — AWP documentation site
+# `docs/site/` — Attestly documentation site
 
 Source for the documentation site hosted at
-[`docs.awp-cloud.xyz`](https://docs.awp-cloud.xyz). Built with
+[`docs.attestly.xyz`](https://docs.attestly.xyz). Built with
 [`mkdocs`](https://www.mkdocs.org/) and the
 [`mkdocs-material`](https://squidfunk.github.io/mkdocs-material/) theme.
 
@@ -24,7 +24,7 @@ mkdocs build
 ## Sections
 
 - **Quickstart** — the 60-second path that mirrors
-  `https://awp-cloud.xyz/quickstart`
+  `https://attestly.xyz/quickstart`
 - **Concepts** — attestations, sinks, verifiers, why it matters
 - **LangGraph integration** — full SDK reference
 - **Self-hosted** — OSS-only path (FileSink, static viewer, no cloud)

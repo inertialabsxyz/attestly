@@ -2,7 +2,7 @@
 
 These prompts dispatch Claude Code agents to implement the four steps defined in [`gtm-phase-1-plan.md`](gtm-phase-1-plan.md). Each prompt is self-contained — agents work in isolated git worktrees and do not share state during execution.
 
-This is a GTM-driven phase, not a protocol-driven phase. The 8-week prototype plan ([`awp-prototype-plan.md`](awp-prototype-plan.md)) is complete; the next move is making the prototype demo-able and pilot-ready for the buyer personas described in [`../awp-market-research.md`](../awp-market-research.md). The framing for that change-of-direction lives in [`../docs/USER_JOURNEYS.md`](../docs/USER_JOURNEYS.md) and [`../docs/PHASE1_REVIEW.md`](../docs/PHASE1_REVIEW.md).
+This is a GTM-driven phase, not a protocol-driven phase. The 8-week prototype plan ([`attestly-prototype-plan.md`](attestly-prototype-plan.md)) is complete; the next move is making the prototype demo-able and pilot-ready for the buyer personas described in [`../attestly-market-research.md`](../attestly-market-research.md). The framing for that change-of-direction lives in [`../docs/USER_JOURNEYS.md`](../docs/USER_JOURNEYS.md) and [`../docs/PHASE1_REVIEW.md`](../docs/PHASE1_REVIEW.md).
 
 The conventions referenced below live in [`/.claude/`](../.claude/):
 
@@ -53,11 +53,11 @@ The verification commands in each prompt assume `make check` exists (unchanged f
 
 **Prompt:**
 
-You are implementing Step 1 of GTM Phase 1 of AWP. The full specification is in `planning/gtm-phase-1-plan.md` under "Step 1 — Audit Viewer". Read that section carefully before writing any code.
+You are implementing Step 1 of GTM Phase 1 of Attestly. The full specification is in `planning/gtm-phase-1-plan.md` under "Step 1 — Audit Viewer". Read that section carefully before writing any code.
 
 ### Context
 
-The repository contains a complete prototype: `awp-core` (attestations, signing, Merkle, SQLite), `awp-agents` (Worker, Verifier, Dispatcher, ParallelDispatcher, Batcher), and four CLI examples that produce JSONL logs at `data/attestations.json` and `data/executions.json`. Run any example (e.g. `cargo run --example dispatcher_flow`) to populate those files; their schemas are documented in `crates/awp-core/src/attestation.rs`, `crates/awp-core/src/task.rs`, and `crates/awp-core/src/execution.rs`.
+The repository contains a complete prototype: `attestly-core` (attestations, signing, Merkle, SQLite), `attestly-agents` (Worker, Verifier, Dispatcher, ParallelDispatcher, Batcher), and four CLI examples that produce JSONL logs at `data/attestations.json` and `data/executions.json`. Run any example (e.g. `cargo run --example dispatcher_flow`) to populate those files; their schemas are documented in `crates/attestly-core/src/attestation.rs`, `crates/attestly-core/src/task.rs`, and `crates/attestly-core/src/execution.rs`.
 
 The system has no UI today. The architecture doc ([`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)) describes the data shapes; you can read JSONL files directly to confirm structure.
 
@@ -70,9 +70,9 @@ Your job is to add a static HTML viewer that renders the receipts legibly to a n
 2. **File loading UI:** drag-and-drop area plus `<input type="file" multiple>` accepting both `attestations.json` and `executions.json`. Display the loaded file names and record counts.
 
 3. **Schema reference:**
-   - `Attestation` — see `crates/awp-core/src/attestation.rs`. Fields: `id, agent_id, agent_pubkey ([u8;32]), task_hash, output_hash, output, status, references, timestamp (i64 epoch seconds), signature ([u8;64])`.
+   - `Attestation` — see `crates/attestly-core/src/attestation.rs`. Fields: `id, agent_id, agent_pubkey ([u8;32]), task_hash, output_hash, output, status, references, timestamp (i64 epoch seconds), signature ([u8;64])`.
    - `AttestationStatus` — `"Completed"`, `{"Failed": "<reason>"}`, `{"Verified": {"attestation_valid": bool, "answer_correct": bool}}`.
-   - `TaskExecutionRecord` (in `executions.json`) — see `crates/awp-core/src/execution.rs`. Fields: `task_id, task_input, status, worker_attestation_id, verifier_attestation_id, started_at, completed_at`. The execution joins to attestations by id.
+   - `TaskExecutionRecord` (in `executions.json`) — see `crates/attestly-core/src/execution.rs`. Fields: `task_id, task_input, status, worker_attestation_id, verifier_attestation_id, started_at, completed_at`. The execution joins to attestations by id.
    - JSONL format: one JSON object per line, no surrounding array.
 
 4. **Timeline rendering:** chronological table, one row per `TaskExecutionRecord`, columns: timestamp, agent ids (worker → verifier), task input (truncated), decision (worker output, truncated), verification status badge.
@@ -85,7 +85,7 @@ Your job is to add a static HTML viewer that renders the receipts legibly to a n
 
 6. **Row expansion:** click a row to show full signed attestation payloads (worker + verifier), agent public keys (hex, truncate middle to first 8 / last 8 chars), `references` link, status detail, signature (hex, truncated similarly).
 
-7. **In-browser signature verification:** vendor a small ed25519 library (e.g. `@noble/ed25519` — minified UMD bundle copied into `tools/audit-viewer/vendor/`) and re-verify each `Attestation`'s signature client-side. Display "✓ signature verified in browser" when valid; "✗ signature invalid" in red when not. The verification must use the same canonical signing payload as the Rust implementation: every field except `signature`, in the same order, serialised as canonical JSON. Read `Attestation::signing_payload` in `crates/awp-core/src/attestation.rs` and replicate it exactly. Add a unit test in JS confirming you produce byte-identical output for a known attestation.
+7. **In-browser signature verification:** vendor a small ed25519 library (e.g. `@noble/ed25519` — minified UMD bundle copied into `tools/audit-viewer/vendor/`) and re-verify each `Attestation`'s signature client-side. Display "✓ signature verified in browser" when valid; "✗ signature invalid" in red when not. The verification must use the same canonical signing payload as the Rust implementation: every field except `signature`, in the same order, serialised as canonical JSON. Read `Attestation::signing_payload` in `crates/attestly-core/src/attestation.rs` and replicate it exactly. Add a unit test in JS confirming you produce byte-identical output for a known attestation.
 
 8. **Aesthetic constraint:** clean, monochrome, audit-document feel. System fonts. No flashy animations. Sarah is showing this to her external auditor.
 
@@ -144,11 +144,11 @@ make check
 
 **Prompt:**
 
-You are implementing Step 2 of GTM Phase 1 of AWP. The full specification is in `planning/gtm-phase-1-plan.md` under "Step 2 — KYC Receipts Demo". Read that section carefully before writing any code.
+You are implementing Step 2 of GTM Phase 1 of Attestly. The full specification is in `planning/gtm-phase-1-plan.md` under "Step 2 — KYC Receipts Demo". Read that section carefully before writing any code.
 
 ### Context
 
-The repository contains a complete prototype with four examples (`simple_attestation`, `dispatcher_flow`, `full_pipeline`, `parallel_verifiers`). All use a `WorkerTask` containing an arithmetic expression, with a `calculate` tool in `crates/awp-agents/src/tools.rs`. The Worker and Verifier agents (`crates/awp-agents/src/worker.rs`, `verifier.rs`) construct attestations after running the tool. The `Dispatcher` (`crates/awp-agents/src/dispatcher.rs`) coordinates them with timeouts.
+The repository contains a complete prototype with four examples (`simple_attestation`, `dispatcher_flow`, `full_pipeline`, `parallel_verifiers`). All use a `WorkerTask` containing an arithmetic expression, with a `calculate` tool in `crates/attestly-agents/src/tools.rs`. The Worker and Verifier agents (`crates/attestly-agents/src/worker.rs`, `verifier.rs`) construct attestations after running the tool. The `Dispatcher` (`crates/attestly-agents/src/dispatcher.rs`) coordinates them with timeouts.
 
 Your job is to add a vertical-flavoured demo that replaces arithmetic with a KYC (Know Your Customer) decision rule. This shifts the headline example from `7+13=20` to a customer-resonant scenario per `docs/USER_JOURNEYS.md` (Persona A: compliance lead Sarah).
 
@@ -156,7 +156,7 @@ This step is **Rust-only.** Step 1 (the audit viewer) ships in parallel and is H
 
 ### Your Task
 
-1. **Add a `KycRequest` and `KycDecision` type** in `crates/awp-core/src/lib.rs` (or a new `kyc.rs` module — your call, justify in the PR):
+1. **Add a `KycRequest` and `KycDecision` type** in `crates/attestly-core/src/lib.rs` (or a new `kyc.rs` module — your call, justify in the PR):
    ```rust
    pub struct KycRequest {
        pub customer_id: String,
@@ -173,7 +173,7 @@ This step is **Rust-only.** Step 1 (the audit viewer) ships in parallel and is H
    ```
    Add `serde::Serialize`/`Deserialize` derives. Add `canonical_bytes()` on `KycRequest` returning a deterministic byte serialisation (use serde_json with sorted keys, or hand-roll — match what `WorkerTask::canonical_bytes` does).
 
-2. **Add a `kyc_decide` tool** in `crates/awp-agents/src/tools.rs`:
+2. **Add a `kyc_decide` tool** in `crates/attestly-agents/src/tools.rs`:
    ```rust
    pub fn kyc_decide(request: &KycRequest) -> KycDecision { ... }
    ```
@@ -217,7 +217,7 @@ This step is **Rust-only.** Step 1 (the audit viewer) ships in parallel and is H
 
 7. **Tests:**
    - Unit tests in `tools.rs` for `kyc_decide` (each branch)
-   - Integration test in `crates/awp-agents/tests/` exercising the tampered path end-to-end and asserting the Verifier returns `attestation_valid: false`
+   - Integration test in `crates/attestly-agents/tests/` exercising the tampered path end-to-end and asserting the Verifier returns `attestation_valid: false`
 
 ### Stubs to pre-place
 
@@ -226,7 +226,7 @@ If you anticipate that Step 3 will need to know about `AgentIdentity` in your ex
 ### Do Not Touch
 
 - `tools/audit-viewer/` — Step 1's domain (it's HTML/JS; you have no reason to touch it)
-- `crates/awp-core/src/identity.rs` — does not exist yet, Step 3's domain
+- `crates/attestly-core/src/identity.rs` — does not exist yet, Step 3's domain
 - `docs/compliance/` — does not exist yet, Step 4's domain
 - The four existing examples — must continue to work unchanged (regression risk if you generalise the trait under option (a)). If you take option (a), prove the existing examples still work in CI.
 
@@ -273,13 +273,13 @@ grep -A 2 "## Examples" README.md | head -5
 
 **Prompt:**
 
-You are implementing Step 3 of GTM Phase 1 of AWP. The full specification is in `planning/gtm-phase-1-plan.md` under "Step 3 — Persistent Agent Identity". Read that section carefully before writing any code.
+You are implementing Step 3 of GTM Phase 1 of Attestly. The full specification is in `planning/gtm-phase-1-plan.md` under "Step 3 — Persistent Agent Identity". Read that section carefully before writing any code.
 
 ### Context
 
 Steps 1 and 2 are complete and merged. The repository now contains:
 
-- The full prototype (`awp-core`, `awp-agents`, four original examples)
+- The full prototype (`attestly-core`, `attestly-agents`, four original examples)
 - A new `kyc_receipts` example using the `Dispatcher` with `KycWorker` / `KycVerifier` (or generic `Worker` / `Verifier` if Step 2 took option (a))
 - A static HTML audit viewer at `tools/audit-viewer/` that renders attestations and re-verifies signatures in-browser
 - All `Worker::new(agent_id)` and `Verifier::new(agent_id)` constructors generate ephemeral keypairs internally — restart the process and the agent has a new identity
@@ -288,7 +288,7 @@ This is the load-bearing gap for Persona B (Marcus, agent platform operator) per
 
 ### Your Task
 
-1. **Create `crates/awp-core/src/identity.rs`** with:
+1. **Create `crates/attestly-core/src/identity.rs`** with:
    ```rust
    pub struct AgentIdentity {
        pub agent_id: String,
@@ -407,7 +407,7 @@ open tools/audit-viewer/index.html
 
 **Prompt:**
 
-You are producing the SR 11-7 compliance pre-mapping for AWP. The full specification is in `planning/gtm-phase-1-plan.md` under "Step 4 — SR 11-7 Compliance Pre-Mapping". Read that section carefully — including the "Critical guardrail" — before writing.
+You are producing the SR 11-7 compliance pre-mapping for Attestly. The full specification is in `planning/gtm-phase-1-plan.md` under "Step 4 — SR 11-7 Compliance Pre-Mapping". Read that section carefully — including the "Critical guardrail" — before writing.
 
 This step is **markdown-only**. There are no Rust changes. The verification is doc accuracy and reviewer-checked non-overclaim, not `make check`.
 
@@ -415,13 +415,13 @@ This step is **markdown-only**. There are no Rust changes. The verification is d
 
 The repository contains a complete prototype that produces signed `Attestation` records of agent decisions, with cryptographic verification, durable JSONL/SQLite logs, and (after Steps 1-3) a human-readable audit viewer plus persistent agent identity. The KYC receipts demo from Step 2 is the working example you cite for concreteness.
 
-The buyer for this document is the compliance lead at a US-regulated mid-market firm (Persona A in `docs/USER_JOURNEYS.md`). They will read this document either before or alongside the 3-minute demo video. Per the GTM plan (`awp-market-research.md` §4.2 lever #5), this is "legal interpretation work that compounds" — it is both a sales asset and a defensibility lever.
+The buyer for this document is the compliance lead at a US-regulated mid-market firm (Persona A in `docs/USER_JOURNEYS.md`). They will read this document either before or alongside the 3-minute demo video. Per the GTM plan (`attestly-market-research.md` §4.2 lever #5), this is "legal interpretation work that compounds" — it is both a sales asset and a defensibility lever.
 
 ### Critical guardrail (must read)
 
-**SR 11-7 covers model lifecycle governance broadly. AWP attests to *agent execution events*.** That is one strand of one section. Any clause you cite as "covered by AWP" must be honestly defensible — overclaiming damages credibility with the exact buyers we are trying to win.
+**SR 11-7 covers model lifecycle governance broadly. Attestly attests to *agent execution events*.** That is one strand of one section. Any clause you cite as "covered by Attestly" must be honestly defensible — overclaiming damages credibility with the exact buyers we are trying to win.
 
-The reviewing agent (Closing the Loop step) will explicitly check for overclaims. If a cited AWP feature is *necessary but not sufficient* for compliance with a clause, say so plainly. The "What AWP does not provide" section must be at least as substantial as the "covered" section.
+The reviewing agent (Closing the Loop step) will explicitly check for overclaims. If a cited Attestly feature is *necessary but not sufficient* for compliance with a clause, say so plainly. The "What Attestly does not provide" section must be at least as substantial as the "covered" section.
 
 ### Your Task
 
@@ -430,40 +430,40 @@ The reviewing agent (Closing the Loop step) will explicitly check for overclaims
    **(a) Preamble** (~150 words)
    - What SR 11-7 is: US Federal Reserve Supervisory Letter SR 11-7, "Guidance on Model Risk Management" (2011), now widely referenced for AI / agent governance in regulated US financial services. Cite the document name and date; do not link to a paywalled source.
    - Why it matters for agent-driven decisions: SR 11-7 covers model lifecycle, including ongoing use, documentation, and audit trails. AI agents that make decisions ("approve this loan," "flag this transaction") fall within its scope as the institution's models.
-   - AWP's claim scope: AWP attests to *what the agent did* (input, output, time, signature, optional independent verification). It does not attest to *whether the model is correct under SR 11-7's broader requirements*.
+   - Attestly's claim scope: Attestly attests to *what the agent did* (input, output, time, signature, optional independent verification). It does not attest to *whether the model is correct under SR 11-7's broader requirements*.
 
    **(b) Scope and limits** (~200 words)
-   - What AWP attestations help with: non-repudiable record of agent decisions, independent verification by a second agent (caught tamper / disagreement), durable audit trail, cryptographic timestamps, batched inclusion proofs for efficient long-term storage.
-   - What AWP attestations do *not* address: model validation methodology, ongoing performance monitoring, governance committee structures, change management, risk appetite frameworks, third-party model risk.
-   - Recommended posture: AWP is one of multiple controls in an SR 11-7-aligned program. It is the "agent decision provenance" control specifically.
+   - What Attestly attestations help with: non-repudiable record of agent decisions, independent verification by a second agent (caught tamper / disagreement), durable audit trail, cryptographic timestamps, batched inclusion proofs for efficient long-term storage.
+   - What Attestly attestations do *not* address: model validation methodology, ongoing performance monitoring, governance committee structures, change management, risk appetite frameworks, third-party model risk.
+   - Recommended posture: Attestly is one of multiple controls in an SR 11-7-aligned program. It is the "agent decision provenance" control specifically.
 
    **(c) Clause-by-clause mapping table** (the centrepiece)
-   - Table with columns: SR 11-7 clause / subsection | Requirement summary | AWP feature(s) that help | Necessary-but-not-sufficient? (Y/N) | Notes
+   - Table with columns: SR 11-7 clause / subsection | Requirement summary | Attestly feature(s) that help | Necessary-but-not-sufficient? (Y/N) | Notes
    - Cite specific SR 11-7 sections — at minimum, you should cover sections in:
      - III. Model Development, Implementation, and Use (especially: documentation, ongoing use)
-     - IV. Model Validation (especially: outcome analysis — where AWP's verifier disagreement detection helps)
+     - IV. Model Validation (especially: outcome analysis — where Attestly's verifier disagreement detection helps)
      - V. Governance, Policies, and Controls (especially: documentation, internal audit)
-   - Cite the AWP feature by file or doc reference: e.g. *"`Attestation.timestamp` + `Attestation.signature` (`crates/awp-core/src/attestation.rs`)"*, *"Verifier disagreement detection (`crates/awp-agents/src/dispatcher.rs`)"*, *"Merkle inclusion proofs (`crates/awp-core/src/merkle.rs`)"*.
-   - For each row, the "Necessary-but-not-sufficient?" column is critical. Most rows should be **Y**. Only mark a row **N** (i.e. AWP fully satisfies the clause) if you are confident — and even then, document the assumption.
+   - Cite the Attestly feature by file or doc reference: e.g. *"`Attestation.timestamp` + `Attestation.signature` (`crates/attestly-core/src/attestation.rs`)"*, *"Verifier disagreement detection (`crates/attestly-agents/src/dispatcher.rs`)"*, *"Merkle inclusion proofs (`crates/attestly-core/src/merkle.rs`)"*.
+   - For each row, the "Necessary-but-not-sufficient?" column is critical. Most rows should be **Y**. Only mark a row **N** (i.e. Attestly fully satisfies the clause) if you are confident — and even then, document the assumption.
 
    **(d) Sample audit narrative** (~250 words)
    - A worked example: a Risk Officer at a mid-market bank is asked by an examiner, *"Show me how you ensure your KYC agent's decisions are auditable and verifiable."*
    - The Risk Officer's answer references: the KYC receipts demo's output (audit viewer screenshot or stdout block), the signed attestations, the verifier's independent re-decision, and the long-term retention via Merkle batching.
-   - Conclude with what the examiner *still needs to see beyond AWP* (model validation reports, governance documentation, etc.) — because the answer "AWP shows everything" would be an overclaim.
+   - Conclude with what the examiner *still needs to see beyond Attestly* (model validation reports, governance documentation, etc.) — because the answer "Attestly shows everything" would be an overclaim.
 
-   **(e) What AWP does not provide** (~250 words, MUST be at least as substantial as section (b))
+   **(e) What Attestly does not provide** (~250 words, MUST be at least as substantial as section (b))
    - Itemise SR 11-7 requirements that are out of scope:
-     - Model validation methodology (how was the KYC rule chosen? AWP does not address this)
-     - Ongoing model performance monitoring (drift, accuracy over time — observability tools, not AWP)
-     - Governance committee structures (who approves the model? AWP does not encode this)
-     - Change management (how is a model update controlled? AWP can attest to use-of-version-X but does not approve version X)
-     - Third-party model risk (vendor LLMs, MCP tools — AWP attests to *use*, not to vendor risk)
+     - Model validation methodology (how was the KYC rule chosen? Attestly does not address this)
+     - Ongoing model performance monitoring (drift, accuracy over time — observability tools, not Attestly)
+     - Governance committee structures (who approves the model? Attestly does not encode this)
+     - Change management (how is a model update controlled? Attestly can attest to use-of-version-X but does not approve version X)
+     - Third-party model risk (vendor LLMs, MCP tools — Attestly attests to *use*, not to vendor risk)
      - Risk appetite frameworks
      - Stress testing
    - For each: one sentence on why it is out of scope, and one sentence on what control or tool typically addresses it.
 
 2. **Create `docs/compliance/README.md`** as the index:
-   - One-paragraph overview: this directory contains AWP-to-regulation mapping documents. Each document maps AWP attestation features to specific clauses of one regulation. They are decision-support, not legal advice.
+   - One-paragraph overview: this directory contains Attestly-to-regulation mapping documents. Each document maps Attestly attestation features to specific clauses of one regulation. They are decision-support, not legal advice.
    - List of current and planned mappings:
      - **SR 11-7** ([`SR_11_7.md`](SR_11_7.md)) — current. US Federal Reserve guidance on model risk management.
      - **EU AI Act** — planned (GTM Phase 2 or later)
@@ -480,12 +480,12 @@ None — this is markdown only.
 - All Rust code — this is a markdown-only step
 - `tools/audit-viewer/` — Step 1's domain
 - `docs/PROCESS_OVERVIEW.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/PAIN_POINTS.md`, `docs/PHASE1_REVIEW.md` — they reference the prototype, not the compliance work; keep them as-is
-- `awp-market-research.md` — it is the source of the GTM framing, not something to amend in this step
+- `attestly-market-research.md` — it is the source of the GTM framing, not something to amend in this step
 
 ### Closing the Loop
 
 When the document is complete:
-1. Spawn the review agent per `.claude/review-gate.md` against `planning/gtm-phase-1-plan.md` → "Step 4 — SR 11-7 Compliance Pre-Mapping", with **explicit emphasis on the overclaim guardrail.** The reviewer must check that every cited AWP feature is verifiable in code and that the "necessary-but-not-sufficient" flag is correctly applied. The "What AWP does not provide" section must be at least as substantial as the "Scope and limits" section.
+1. Spawn the review agent per `.claude/review-gate.md` against `planning/gtm-phase-1-plan.md` → "Step 4 — SR 11-7 Compliance Pre-Mapping", with **explicit emphasis on the overclaim guardrail.** The reviewer must check that every cited Attestly feature is verifiable in code and that the "necessary-but-not-sufficient" flag is correctly applied. The "What Attestly does not provide" section must be at least as substantial as the "Scope and limits" section.
 2. Capture the review agent's structured report.
 3. Open a draft PR per `.claude/pull-requests.md` (target `main`, title `docs(compliance): gtm phase 1 SR 11-7 pre-mapping`).
 4. Post the Agent Run Report comment combining `git log main..HEAD --oneline` with the review report.
@@ -500,7 +500,7 @@ make check
 # Documents exist and are well-formed markdown
 test -s docs/compliance/SR_11_7.md
 test -s docs/compliance/README.md
-grep -q "What AWP does not provide" docs/compliance/SR_11_7.md
+grep -q "What Attestly does not provide" docs/compliance/SR_11_7.md
 grep -q "Necessary-but-not-sufficient" docs/compliance/SR_11_7.md
 # → all true
 

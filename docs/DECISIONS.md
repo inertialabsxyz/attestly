@@ -1,12 +1,12 @@
 # Design Decisions Log
 
-Architectural choices made across the AWP prototype's three implementation
+Architectural choices made across the Attestly prototype's three implementation
 phases (Weeks 1-6), the Phase 4 evaluation findings, and a recommendation
 for the framework decision.
 
 This file is the input to the human's framework choice. The recommendation
 section names a Decision Option (A/B/C/D from
-`planning/awp-prototype-plan.md`) but the call is the human's, not Claude's.
+`planning/attestly-prototype-plan.md`) but the call is the human's, not Claude's.
 
 ---
 
@@ -16,7 +16,7 @@ section names a Decision Option (A/B/C/D from
 
 #### D1.1. Plain async types in place of `AgentBuilder<_, DirectAgent>::new(...).run()`
 
-`crates/awp-agents/src/{worker,verifier}.rs` implement
+`crates/attestly-agents/src/{worker,verifier}.rs` implement
 `WorkerAgent`/`VerifierAgent` as plain async traits, not via
 AutoAgents' `AgentBuilder`. **Why:** the framework's `run()` requires a
 live LLM provider — Phase 1 would have been unrunnable without an API
@@ -38,7 +38,7 @@ Phase 1 Q2.
 
 `AgentKeypair::generate()` is called once per Worker/Verifier
 construction, with no on-disk identity. **Why:** the prototype plan
-defers "Agent identity registration" to Phase 2 of AWP overall.
+defers "Agent identity registration" to Phase 2 of Attestly overall.
 Persistent keys would force a key-management story that the prototype
 doesn't need yet. The trade-off is that every restart produces a new
 agent identity — fine for a prototype, not for production.
@@ -46,7 +46,7 @@ agent identity — fine for a prototype, not for production.
 #### D1.4. `AttestationStatus::Failed(String)` as a tuple variant
 
 The plan's example showed `Failed(String)` as a tuple variant; an
-earlier draft of `crates/awp-core/src/attestation.rs` used a struct
+earlier draft of `crates/attestly-core/src/attestation.rs` used a struct
 variant `Failed { reason: String }` for ergonomics. We aligned to the
 plan in commit `0275911`. **Why:** matches the spec's wire shape so
 external consumers reading `AttestationStatus::Failed("…")` JSON do
@@ -61,7 +61,7 @@ but JSON kept Phase 1 dependency-light.
 
 #### D1.6. Two `verify_attestation` surfaces (string and typed)
 
-`crates/awp-agents/src/tools.rs` exposes `verify_attestation` (taking
+`crates/attestly-agents/src/tools.rs` exposes `verify_attestation` (taking
 `String` JSON, matching the AutoAgents tool convention) and
 `verify_attestation_struct` (taking `&Attestation`, used by the
 Dispatcher and tests). **Why:** the LLM-driven path needs the JSON
@@ -71,13 +71,13 @@ typed values multiply. See `PAIN_POINTS.md` Phase 4 synthesis #2.
 
 ### Phase 2 — Dispatcher & Orchestration
 
-#### D2.1. Coordination types live in `awp-core`, not `awp-agents`
+#### D2.1. Coordination types live in `attestly-core`, not `attestly-agents`
 
 `TaskExecution`, `ExecutionStatus`, and the persistence helpers live
-in `crates/awp-core/src/{task,execution}.rs`. **Why:** any consumer
+in `crates/attestly-core/src/{task,execution}.rs`. **Why:** any consumer
 (Dispatcher, dashboard, Phase 3 Batcher) can serialize and reason
-about an execution without depending on `awp-agents`. Keeps the
-framework-coupling boundary at `awp-agents`. See `PAIN_POINTS.md`
+about an execution without depending on `attestly-agents`. Keeps the
+framework-coupling boundary at `attestly-agents`. See `PAIN_POINTS.md`
 Phase 2 Q1.
 
 #### D2.2. Dispatcher takes `&dyn WorkerAgent` and `&dyn VerifierAgent`
@@ -102,7 +102,7 @@ The Dispatcher logs `dispatcher: verifier disagreement …` to stderr
 but transitions to `Complete{attestation_valid, answer_correct}` —
 not to `Failed`. **Why:** disagreement is the very signal the system
 exists to surface. Halting on disagreement would suppress it instead
-of recording it. Downstream consumers (Phase 2 of AWP overall: chain
+of recording it. Downstream consumers (Phase 2 of Attestly overall: chain
 anchoring, dispute resolution) need the disagreement preserved as
 data.
 
@@ -129,7 +129,7 @@ that this introduces the second persistence model — see
 
 #### D3.1. `rs_merkle` over a hand-rolled tree
 
-`crates/awp-core/src/merkle.rs` wraps `rs_merkle::MerkleTree` rather
+`crates/attestly-core/src/merkle.rs` wraps `rs_merkle::MerkleTree` rather
 than implementing the tree from scratch. **Why:** the plan listed
 `rs_merkle` as the "start with" library. Audited, well-tested, and
 the per-leaf inclusion proof API matches our needs. The wrapper
@@ -161,13 +161,13 @@ The Batcher does not retroactively splice late attestations into
 already-sealed batches. **Why:** every issued inclusion proof is only
 meaningful relative to the sealed root; mutating a batch invalidates
 every proof we already gave out. Late arrivals lend themselves to a
-"supplementary batch" pattern if Phase 2 of AWP overall needs it; the
+"supplementary batch" pattern if Phase 2 of Attestly overall needs it; the
 prototype's append-only model is simpler. See `PAIN_POINTS.md` Phase
 3 Q3.
 
 #### D3.5. SQLite sits *alongside* the JSON logs, not replacing them
 
-Phase 3 added `data/awp.db` but the Phase 1/2 JSON logs continue to
+Phase 3 added `data/attestly.db` but the Phase 1/2 JSON logs continue to
 be written. **Why:** the plan's "Repo Structure" showed both; nothing
 in the Phase 3 brief authorised replacing the JSON logs, and the
 Phase 1/2 examples (`simple_attestation`, `dispatcher_flow`) still
@@ -190,7 +190,7 @@ succeed."
 
 #### D4.2. `ParallelDispatcher` ships next to single-verifier `Dispatcher`, not replacing it
 
-`crates/awp-agents/src/parallel.rs` defines a separate
+`crates/attestly-agents/src/parallel.rs` defines a separate
 `ParallelExecution` result type (with `verifier_attestations: Vec<…>`)
 rather than generalising `TaskExecution`. **Why:** the Phase 4 brief
 says explicitly "this is an evaluation phase, not a refactor", and
@@ -198,7 +198,7 @@ generalising the coordination type would touch the Phase 1/2/3
 storage and reader code. The shim cost is `as_task_execution` (which
 projects the parallel run to a single-verifier `TaskExecution` for
 the executions log) and a duplicated config struct. Cleanly
-generalising the coordination type is a Phase 2-of-AWP task.
+generalising the coordination type is a Phase 2-of-Attestly task.
 
 #### D4.3. Disagreement reports `Complete{false, false}`, not majority verdict
 
@@ -233,14 +233,14 @@ Phase 4 brief; *we did not actually port any code*).
 
 Sources reviewed:
 
-- AutoAgents — directly used; see `crates/awp-agents/src/worker.rs:1-21`
+- AutoAgents — directly used; see `crates/attestly-agents/src/worker.rs:1-21`
   for the framework-integration scan results
 - swarms-rs — <https://github.com/The-Swarm-Corporation/swarms-rs> (README, examples list)
 - Rig — <https://github.com/0xPlaygrounds/rig> (README, docs.rig.rs reference)
 
 | Criterion | Weight | AutoAgents (Lived) | swarms-rs (Reviewed) | Custom-on-Rig (Reviewed) |
 |-----------|--------|---------------------|------------------------|---------------------------|
-| Attestation integration | High | **2/5** — `AgentBuilder.run()` requires an LLM provider; we never managed to inject attestation generation into the framework's output flow without breaking `make check` hermeticity. Worker/Verifier ship as plain async types because of this (PAIN_POINTS Phase 1 Q1). | **3/5** — Agent builder pattern (`agent_builder().build()`) and "Standardized methods for inter-agent communication" are abstract in docs; concrete attestation hooks not documented. Comparable shape to AutoAgents, so the same gap likely applies. | **4/5** — Rig is single-agent-focused with `client.agent(model_id).preamble().build().prompt()`. Attestation generation lives in *our* code wrapping Rig's prompt response — no framework surface to hook into, nothing to fight. The `awp-core` crate already has the right shape for this. |
+| Attestation integration | High | **2/5** — `AgentBuilder.run()` requires an LLM provider; we never managed to inject attestation generation into the framework's output flow without breaking `make check` hermeticity. Worker/Verifier ship as plain async types because of this (PAIN_POINTS Phase 1 Q1). | **3/5** — Agent builder pattern (`agent_builder().build()`) and "Standardized methods for inter-agent communication" are abstract in docs; concrete attestation hooks not documented. Comparable shape to AutoAgents, so the same gap likely applies. | **4/5** — Rig is single-agent-focused with `client.agent(model_id).preamble().build().prompt()`. Attestation generation lives in *our* code wrapping Rig's prompt response — no framework surface to hook into, nothing to fight. The `attestly-core` crate already has the right shape for this. |
 | Orchestration flexibility | High | **3/5** — Has a `design_patterns` example folder including `parallel` and `reflection`, which is the closest documented pattern to worker-verifier — but the patterns are LLM-driven by default, not pure-async. The pub/sub `Environment` system is documented but we never used it; for our shape (sequential dispatch, optional fan-out) trait objects were sufficient. | **3/5** — `ConcurrentWorkflow::builder().agents(vec![…]).build()` directly matches our parallel-verifier shape. Sequential workflows mentioned but less detailed. Less mature than AutoAgents but the API surface fits our needs more directly. | **4/5** — No multi-agent primitives; users build their own coordination. For our shapes (sequential Worker→Verifier, parallel N-verifier, time-triggered Batcher) `tokio::join!`, `try_join_all`, and `mpsc::channel` are the obvious tools — exactly what we ended up using on top of AutoAgents anyway. The framework wouldn't fight us. |
 | Error handling clarity | Medium | **3/5** — `AgentBuilder.build()` returns `Result`, errors flow through. We didn't drive enough framework code to encounter recovery semantics (the plan deferred "production error handling"). Stage-level error handling in our Dispatcher is tokio `Result`/`Elapsed`, not framework-mediated. | **2/5** — Documentation mentions "memory management, tool integration, and autonomous execution" but error/recovery semantics not visible in the README content reviewed. | **4/5** — Error handling is just Rust + tokio. `Result<T, E>` everywhere, `tokio::time::timeout` for cancellation. Nothing opaque. |
 | Documentation quality | Medium | **3/5** — Quickstart works; design-pattern examples exist. Specific multi-agent worker-verifier example does **not** exist (PAIN_POINTS Phase 1 Q1). Forced us to extrapolate from `basic` + `pipeline` examples. | **2/5** — README provides quickstart and architectural diagrams but advanced patterns (tool composition, error recovery, scaling) lack detail. 154 GitHub stars; nascent. | **4/5** — Production-grade docs at docs.rig.rs, 7.2k GitHub stars, used by St Jude / Coral Protocol. README warns of "breaking changes" but the documentation surface is mature. |
@@ -298,15 +298,15 @@ plus `mpsc::channel` carried us through Phase 3 too.
    under one trait. The "breaking changes" warning is real but no
    worse than AutoAgents' v0.3.x velocity.
 
-4. **`awp-core` is already framework-agnostic.** The plan's
-   risk-mitigation row "Minimal framework coupling in awp-core" was
-   followed — `awp-core` knows nothing about agents, tools, or LLMs.
-   A swap to Rig touches `awp-agents` only.
+4. **`attestly-core` is already framework-agnostic.** The plan's
+   risk-mitigation row "Minimal framework coupling in attestly-core" was
+   followed — `attestly-core` knows nothing about agents, tools, or LLMs.
+   A swap to Rig touches `attestly-agents` only.
 
 ### What "thin custom layer on Rig" looks like
 
 ```
-crates/awp-agents/
+crates/attestly-agents/
   src/
     rig_client.rs       # one place that talks to Rig (single LLM provider hop)
     worker.rs           # WorkerAgent trait impl using rig_client
@@ -328,7 +328,7 @@ module that the existing trait impls call into.
 
 **Sunk cost is real, and AutoAgents lock-in is *currently zero*.**
 The risk-mitigation row in the plan ("Minimal framework coupling in
-awp-core") was honored: swapping frameworks is a contained change.
+attestly-core") was honored: swapping frameworks is a contained change.
 But the *opposite* is also true — staying with AutoAgents is a
 contained decision. The framework currently has zero lines of code
 in our implementation, so there is no integration debt to escape.
@@ -338,7 +338,7 @@ indistinguishable from Option C until the day we want LLM-driven
 agents — at which point Rig and AutoAgents have roughly the same
 cost-of-integration.
 
-So: **if** the next milestone (Phase 2 of AWP overall) is on-chain
+So: **if** the next milestone (Phase 2 of Attestly overall) is on-chain
 anchoring or identity registration — work that doesn't touch the
 agent loop — Option A (status quo) and Option C (Rig) are
 indistinguishable, and the human can defer this decision again. **If**
@@ -371,5 +371,5 @@ is a product call, not a technical one.
 The plan's Weekly Log Template was not used per phase — each phase's
 PR (`#2`/`#3`/`#4`) and the corresponding `PAIN_POINTS.md` section
 served as the record. The template is preserved in
-`planning/awp-prototype-plan.md` for any future extension of the
+`planning/attestly-prototype-plan.md` for any future extension of the
 prototype that wants weekly granularity.

@@ -1,6 +1,6 @@
-name: Python wheels (awp-core-py)
+name: Python wheels (attestly-core-py)
 
-# Builds wheels for the PyO3 bindings under `crates/awp-python/` across
+# Builds wheels for the PyO3 bindings under `crates/attestly-python/` across
 # macOS / Linux / Windows for Python 3.9–3.13 (abi3 collapses to one
 # wheel per platform). Publish to TestPyPI is gated by manual
 # `workflow_dispatch` per the GTM Phase 2 plan — the real-PyPI promote
@@ -11,13 +11,13 @@ on:
     tags:
       - "v*"
     paths:
-      - "crates/awp-python/**"
-      - "crates/awp-core/**"
+      - "crates/attestly-python/**"
+      - "crates/attestly-core/**"
       - ".github/workflows/python-wheels.yml"
   pull_request:
     paths:
-      - "crates/awp-python/**"
-      - "crates/awp-core/**"
+      - "crates/attestly-python/**"
+      - "crates/attestly-core/**"
       - ".github/workflows/python-wheels.yml"
   workflow_dispatch:
     inputs:
@@ -64,7 +64,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --manifest-path crates/awp-python/Cargo.toml
+          args: --release --out dist --manifest-path crates/attestly-python/Cargo.toml
           manylinux: ${{ matrix.manylinux }}
           sccache: "true"
 
@@ -87,7 +87,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           command: sdist
-          args: --out dist --manifest-path crates/awp-python/Cargo.toml
+          args: --out dist --manifest-path crates/attestly-python/Cargo.toml
       - name: Upload sdist
         uses: actions/upload-artifact@v4
         with:
@@ -112,18 +112,18 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
-      - name: Build awp-verify (cross-language test dependency)
-        run: cargo build -p awp-core --bin awp-verify --release
+      - name: Build attestly-verify (cross-language test dependency)
+        run: cargo build -p attestly-core --bin attestly-verify --release
 
       - name: Install maturin + pytest
         run: pip install maturin pytest
 
       - name: Build extension in place
-        working-directory: crates/awp-python
+        working-directory: crates/attestly-python
         run: maturin develop --release
 
       - name: Run Python tests
-        run: pytest crates/awp-python/tests -v
+        run: pytest crates/attestly-python/tests -v
 
   publish-testpypi:
     name: Publish to TestPyPI
@@ -132,7 +132,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: testpypi
-      url: https://test.pypi.org/project/awp-core-py/
+      url: https://test.pypi.org/project/attestly-core-py/
     permissions:
       id-token: write
     steps:

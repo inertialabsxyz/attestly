@@ -1,11 +1,11 @@
-site_name: AWP — Agent Work Protocol
-site_url: https://docs.awp-cloud.xyz
+site_name: Attestly
+site_url: https://docs.attestly.xyz
 site_description: >-
-  Documentation for the Agent Work Protocol (AWP) — signed, verifiable
+  Documentation for Attestly — signed, verifiable
   attestations of AI agent work. SDK reference, self-hosted path,
   compliance pointers, and migration guides.
-repo_url: https://github.com/inertialabsxyz/awp
-repo_name: inertialabsxyz/awp
+repo_url: https://github.com/inertialabsxyz/attestly
+repo_name: inertialabsxyz/attestly
 edit_uri: edit/main/docs/site/docs/
 
 theme:
@@ -65,4 +65,4 @@ extra:
   generator: false
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/inertialabsxyz/awp
+      link: https://github.com/inertialabsxyz/attestly

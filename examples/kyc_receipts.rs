@@ -24,8 +24,8 @@
 
 use std::path::PathBuf;
 
-use awp_agents::{decision_output, KycVerifier, KycVerifierAgent, KycWorker, KycWorkerAgent};
-use awp_core::{
+use attestly_agents::{decision_output, KycVerifier, KycVerifierAgent, KycWorker, KycWorkerAgent};
+use attestly_core::{
     append_attestation, append_execution, AgentIdentity, Attestation, AttestationStatus,
     ExecutionStatus, FileIdentityStore, KycDecision, KycRequest, TaskExecution,
 };

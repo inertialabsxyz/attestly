@@ -1,6 +1,6 @@
 # User Journeys
 
-How real users would adopt AWP, mapped against the three buyer personas from [`../awp-market-research.md`](../awp-market-research.md). Companion to [`PROCESS_OVERVIEW.md`](PROCESS_OVERVIEW.md) (what the system does) and [`ARCHITECTURE.md`](ARCHITECTURE.md) (how it does it). This document answers *who is using it and what does that look like end-to-end*.
+How real users would adopt Attestly, mapped against the three buyer personas from [`../attestly-market-research.md`](../attestly-market-research.md). Companion to [`PROCESS_OVERVIEW.md`](PROCESS_OVERVIEW.md) (what the system does) and [`ARCHITECTURE.md`](ARCHITECTURE.md) (how it does it). This document answers *who is using it and what does that look like end-to-end*.
 
 The three journeys are deliberately different. The same prototype + viewer + spec serves all three, but the **decisive pilot moment** is different for each, and that drives what we build next.
 
@@ -18,7 +18,7 @@ journey
       Realises current logs aren't signed: 1: Sarah
       Googles "auditable AI agent": 3: Sarah
     section Discovery
-      Lands on AWP page: 4: Sarah
+      Lands on Attestly page: 4: Sarah
       Sees "cryptographic receipts": 5: Sarah
       Forwards link to engineering: 4: Sarah, EngLead
     section Evaluation
@@ -31,7 +31,7 @@ journey
       Shows receipts to internal auditor: 5: Sarah, Auditor
     section Adoption
       External auditor accepts the format: 5: Sarah, Auditor
-      Mandates AWP for all production agents: 5: Sarah
+      Mandates Attestly for all production agents: 5: Sarah
       Renews contract, expands seats: 5: Sarah
 ```
 
@@ -49,27 +49,27 @@ journey
       No way to prove completion: 1: Marcus
       Can't release escrow either way: 2: Marcus
     section Discovery
-      Reads HN post on AWP: 4: Marcus
+      Reads HN post on Attestly: 4: Marcus
       Recognises spec fits payment rails: 5: Marcus
     section Evaluation
       Reads the spec: 5: Marcus
       Forks the prototype: 4: Marcus
-      Wires AWP into one agent class: 3: Marcus
+      Wires Attestly into one agent class: 3: Marcus
     section Pilot
       First receipts flowing through the platform: 5: Marcus
       Receipts attached to invoice records: 5: Marcus
       One dispute resolved using the receipt: 5: Marcus
     section Adoption
-      All platform agents emit AWP: 5: Marcus
+      All platform agents emit Attestly: 5: Marcus
       Settlement automated against receipts: 5: Marcus
-      Premium pricing for "AWP-attested": 5: Marcus
+      Premium pricing for "Attestly-attested": 5: Marcus
 ```
 
 **Decisive moment:** "one dispute resolved using the receipt." This is the GTM's billing / dispute-resolution wedge made concrete. Marcus's journey foregrounds the *output* (receipt → invoice → resolution), not the cryptography.
 
 ### Persona C — Crypto-Native Agent Founder
 
-Already wants on-chain settlement; wants AWP for the attestation primitive.
+Already wants on-chain settlement; wants Attestly for the attestation primitive.
 
 ```mermaid
 journey
@@ -78,7 +78,7 @@ journey
       Designing settlement layer: 3: Riya
       Doesn't want to roll own attestation: 4: Riya
     section Discovery
-      Sees AWP in agent infra Twitter: 5: Riya
+      Sees Attestly in agent infra Twitter: 5: Riya
       Notes "chain-agnostic" + open spec: 5: Riya
     section Evaluation
       Reads spec, runs prototype same day: 5: Riya
@@ -128,7 +128,7 @@ Mapping back to the four gaps in [`PROCESS_OVERVIEW.md`](PROCESS_OVERVIEW.md):
 
 The most important reframing: **persistent identity (gap #3 in PROCESS_OVERVIEW.md) is no longer just a "deferred" item — it is load-bearing for Persona B's pilot stage.** Marcus's settlement system cannot use receipts whose signing keys vanish on restart.
 
-This changes the priority calculus. Closing the identity gap is more valuable than closing on-chain anchoring for the next-six-months GTM goal, even though both were grouped together as "Phase 2-of-AWP" in the prototype plan.
+This changes the priority calculus. Closing the identity gap is more valuable than closing on-chain anchoring for the next-six-months GTM goal, even though both were grouped together as "Phase 2-of-Attestly" in the prototype plan.
 
 ## What this implies for the demo
 
@@ -155,7 +155,7 @@ This is product / GTM work, not protocol work. Phases 1–4 of the prototype are
 
 - [`../planning/gtm-phase-1-plan.md`](../planning/gtm-phase-1-plan.md) — the four-step plan that operationalises this journey analysis
 - [`../planning/gtm-phase-1-agent-prompts.md`](../planning/gtm-phase-1-agent-prompts.md) — dispatch prompts for the four steps
-- [`../awp-market-research.md`](../awp-market-research.md) — buyer personas, GTM plan, defensibility levers
+- [`../attestly-market-research.md`](../attestly-market-research.md) — buyer personas, GTM plan, defensibility levers
 - [`PROCESS_OVERVIEW.md`](PROCESS_OVERVIEW.md) — system overview + the four gaps
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — full architecture
 - [`PHASE1_REVIEW.md`](PHASE1_REVIEW.md) — Phase 1 outcome and the (now superseded) prototype-plan-driven next move

@@ -9,19 +9,19 @@ unchanged.
 ## The two-line switch
 
 ```python title="Before — local-first"
-from awp.langgraph import attest, FileSink
+from attestly.langgraph import attest, FileSink
 
 graph = attest(graph, agent_id="my-agent", sink=FileSink("./data/attestations.jsonl"))
 ```
 
 ```python title="After — hosted"
 import os
-from awp.langgraph import attest, CloudSink
+from attestly.langgraph import attest, CloudSink
 
 graph = attest(
     graph,
     agent_id="my-agent",
-    sink=CloudSink(api_key=os.environ["AWP_API_KEY"]),
+    sink=CloudSink(api_key=os.environ["ATTESTLY_API_KEY"]),
 )
 ```
 
@@ -37,8 +37,8 @@ endpoint:
 
 ```bash title="One-line backfill"
 while read -r line; do
-  curl -sS -X POST https://api.awp-cloud.xyz/v1/attestations \
-       -H "x-api-key: $AWP_API_KEY" \
+  curl -sS -X POST https://api.attestly.xyz/v1/attestations \
+       -H "x-api-key: $ATTESTLY_API_KEY" \
        -H 'content-type: application/json' \
        -d "$line"
 done < ./data/attestations.jsonl
@@ -55,9 +55,9 @@ import json
 import os
 import requests
 
-ENDPOINT = "https://api.awp-cloud.xyz/v1/attestations"
+ENDPOINT = "https://api.attestly.xyz/v1/attestations"
 HEADERS = {
-    "x-api-key": os.environ["AWP_API_KEY"],
+    "x-api-key": os.environ["ATTESTLY_API_KEY"],
     "content-type": "application/json",
 }
 
@@ -82,8 +82,8 @@ as JSONL — the same format `FileSink` produces. You can pipe it into
 the static viewer or back into your own filesystem.
 
 ```bash
-curl -H "x-api-key: $AWP_API_KEY" \
-     https://awp-cloud.xyz/v1/export > receipts.jsonl
+curl -H "x-api-key: $ATTESTLY_API_KEY" \
+     https://attestly.xyz/v1/export > receipts.jsonl
 open tools/audit-viewer/index.html
 # → drag in receipts.jsonl
 ```
@@ -94,7 +94,7 @@ in our database.
 
 The export endpoint stays available for 30 days after cancellation.
 After that, hosted-side retention is purged per the
-[pricing tier's retention promise](https://awp-cloud.xyz/#pricing) —
+[pricing tier's retention promise](https://attestly.xyz/#pricing) —
 but every receipt you exported stays valid forever, because the math
 doesn't depend on us.
 
@@ -114,10 +114,10 @@ If you want belt-and-braces during a cut-over, run two sinks in
 parallel:
 
 ```python
-from awp.langgraph import attest, FileSink, CloudSink, CallableSink
+from attestly.langgraph import attest, FileSink, CloudSink, CallableSink
 
 file_sink = FileSink("./data/attestations.jsonl")
-cloud_sink = CloudSink(api_key=os.environ["AWP_API_KEY"])
+cloud_sink = CloudSink(api_key=os.environ["ATTESTLY_API_KEY"])
 
 def dual_emit(att):
     file_sink.emit(att)

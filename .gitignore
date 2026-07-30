@@ -4,8 +4,8 @@ data/*
 attestations.json
 executions.json
 
-# awp-cloud local dev outputs
-services/awp-cloud/data/
+# attestly-cloud local dev outputs
+services/attestly-cloud/data/
 
 # Runtime outputs (identity secrets, attestation logs) produced inside a
 # Python package directory when an example is run from there.
@@ -18,9 +18,9 @@ python/**/*.egg-info/
 __pycache__/
 *.pyc
 .pytest_cache/
-crates/awp-python/dist/
-crates/awp-python/*.egg-info/
+crates/attestly-python/dist/
+crates/attestly-python/*.egg-info/
 # PyO3 extension built in place by `maturin develop`
-crates/awp-python/python/awp/_native.*.so
-crates/awp-python/python/awp/_native.*.pyd
-crates/awp-python/python/awp/_native.*.dylib
+crates/attestly-python/python/attestly/_native.*.so
+crates/attestly-python/python/attestly/_native.*.pyd
+crates/attestly-python/python/attestly/_native.*.dylib

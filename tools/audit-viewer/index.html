@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AWP Audit Viewer</title>
+<title>Attestly Audit Viewer</title>
 <style>
 :root {
     --ink: #1a1a1a;
@@ -229,7 +229,7 @@ footer {
 </head>
 <body>
 <header>
-    <h1>AWP Audit Viewer</h1>
+    <h1>Attestly Audit Viewer</h1>
     <p class="lede">Render and re-verify signed agent attestations locally. No data leaves this page.</p>
 </header>
 
@@ -254,7 +254,7 @@ footer {
     Signature re-verification runs in your browser using a vendored ed25519
     implementation (<code>vendor/ed25519.js</code>). The signing payload is
     reconstructed to byte-match <code>Attestation::signing_payload</code> in
-    <code>crates/awp-core/src/attestation.rs</code>.
+    <code>crates/attestly-core/src/attestation.rs</code>.
 </footer>
 
 <script src="vendor/ed25519.js"></script>
@@ -447,7 +447,7 @@ function renderTimeline() {
     const host = document.getElementById("timeline-host");
     if (state.executions.length === 0 && state.attestations.size === 0) {
         host.innerHTML =
-            '<div class="empty">No data loaded. Run the LangGraph demo (<code>python python/awp-langgraph/examples/kyc_graph.py</code>) to produce <code>data/attestations.jsonl</code>, or a Rust example for <code>data/attestations.json</code> + <code>data/executions.json</code> — then drop the file(s) above.</div>';
+            '<div class="empty">No data loaded. Run the LangGraph demo (<code>python python/attestly-langgraph/examples/kyc_graph.py</code>) to produce <code>data/attestations.jsonl</code>, or a Rust example for <code>data/attestations.json</code> + <code>data/executions.json</code> — then drop the file(s) above.</div>';
         return;
     }
     rebuildIdentityIndex();
@@ -462,7 +462,7 @@ function renderTimeline() {
         if (!referencedAttestationIds.has(att.id)) unreferenced.push(att);
     }
 
-    // Attestations produced by the awp-langgraph SDK carry their semantics
+    // Attestations produced by the attestly-langgraph SDK carry their semantics
     // in the `output` JSON (`node_name`, plus `references`/`answer_correct`
     // on verifier receipts) rather than in a separate executions.json. Pair
     // them into node rows; anything left over is a genuine orphan.
@@ -540,7 +540,7 @@ function renderExecutionRow(exec) {
     return row;
 }
 
-// Parse an attestation's `output` field as an awp-langgraph SDK payload.
+// Parse an attestation's `output` field as an attestly-langgraph SDK payload.
 // Returns the parsed object if it looks like one (`node_name` present), else
 // null — Rust-demo attestations carry plain strings here and fall through.
 function sdkPayload(att) {
@@ -554,7 +554,7 @@ function sdkPayload(att) {
     return null;
 }
 
-// Pair awp-langgraph SDK attestations into worker→verifier node rows. A
+// Pair attestly-langgraph SDK attestations into worker→verifier node rows. A
 // verifier receipt points at its worker via `references`. Whatever cannot be
 // paired or is not an SDK attestation is returned in `orphans` unchanged.
 function buildSdkNodeRows(unreferenced) {

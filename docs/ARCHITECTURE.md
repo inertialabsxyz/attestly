@@ -1,29 +1,29 @@
-# AWP Prototype Architecture
+# Attestly Prototype Architecture
 
 A description of what is currently shipped in this repository at the close of the 8-week prototype (Phases 1–4 merged to `main`). Diagrams are Mermaid and render inline in GitHub.
 
-This document is descriptive, not prescriptive. For the 30-second walkthrough, see [`PROCESS_OVERVIEW.md`](PROCESS_OVERVIEW.md). For the *why* behind the shape, see [`DECISIONS.md`](DECISIONS.md). For known friction, see [`PAIN_POINTS.md`](PAIN_POINTS.md). For the original plan plus the postmortem, see [`../planning/awp-prototype-plan.md`](../planning/awp-prototype-plan.md).
+This document is descriptive, not prescriptive. For the 30-second walkthrough, see [`PROCESS_OVERVIEW.md`](PROCESS_OVERVIEW.md). For the *why* behind the shape, see [`DECISIONS.md`](DECISIONS.md). For known friction, see [`PAIN_POINTS.md`](PAIN_POINTS.md). For the original plan plus the postmortem, see [`../planning/attestly-prototype-plan.md`](../planning/attestly-prototype-plan.md).
 
 ## Workspace layout
 
 ```
-awp/
+attestly/
 ├── crates/
-│   ├── awp-core/          # framework-agnostic data + crypto + storage
+│   ├── attestly-core/          # framework-agnostic data + crypto + storage
 │   │   ├── attestation.rs # Attestation, AttestationStatus, signing_payload
 │   │   ├── signing.rs     # AgentKeypair (ed25519)
 │   │   ├── task.rs        # TaskExecution, ExecutionStatus
 │   │   ├── execution.rs   # JSONL persistence for executions+attestations
 │   │   ├── merkle.rs      # Batch, InclusionProof, attestation_leaf_hash
 │   │   └── storage.rs     # SQLite: batches, attestations, proofs
-│   ├── awp-agents/        # agent loop + coordination
+│   ├── attestly-agents/        # agent loop + coordination
 │   │   ├── worker.rs      # WorkerAgent trait + Worker
 │   │   ├── verifier.rs    # VerifierAgent trait + Verifier
 │   │   ├── dispatcher.rs  # Dispatcher (single verifier)
 │   │   ├── parallel.rs    # ParallelDispatcher (N verifiers)
 │   │   ├── batcher.rs     # Batcher (count + time triggered)
 │   │   └── tools.rs       # calculate, verify_attestation
-│   └── awp-examples/      # shared example helpers
+│   └── attestly-examples/      # shared example helpers
 ├── examples/
 │   ├── simple_attestation.rs
 │   ├── dispatcher_flow.rs
@@ -32,13 +32,13 @@ awp/
 └── data/                  # JSONL logs + SQLite, gitignored
 ```
 
-`awp-core` has zero dependency on `awp-agents` — the plan's "minimal framework coupling in awp-core" risk-mitigation row was honoured. A future framework swap (see DECISIONS.md) would touch `awp-agents` only.
+`attestly-core` has zero dependency on `attestly-agents` — the plan's "minimal framework coupling in attestly-core" risk-mitigation row was honoured. A future framework swap (see DECISIONS.md) would touch `attestly-agents` only.
 
 ## High-level architecture
 
 ```mermaid
 flowchart LR
-    subgraph awp-agents
+    subgraph attestly-agents
         W[Worker]
         V[Verifier]
         D[Dispatcher]
@@ -47,7 +47,7 @@ flowchart LR
         T[Tools<br/>calculate<br/>verify_attestation]
     end
 
-    subgraph awp-core
+    subgraph attestly-core
         A[Attestation<br/>+ AgentKeypair]
         TE[TaskExecution<br/>+ ExecutionStatus]
         M[Merkle<br/>Batch + InclusionProof]
@@ -58,7 +58,7 @@ flowchart LR
     subgraph data
         J1[(attestations.json)]
         J2[(executions.json)]
-        DB[(awp.db)]
+        DB[(attestly.db)]
     end
 
     D --> W & V
@@ -78,13 +78,13 @@ flowchart LR
 
 ### Module dependency rules
 
-- `awp-core` is leaf. No dependency on agents, tokio runtime, or any framework.
-- `awp-agents` depends on `awp-core` only. Tokio enters here.
-- `awp-examples` depends on both. The four example binaries live in `examples/` and depend on `awp-examples` for shared helpers.
+- `attestly-core` is leaf. No dependency on agents, tokio runtime, or any framework.
+- `attestly-agents` depends on `attestly-core` only. Tokio enters here.
+- `attestly-examples` depends on both. The four example binaries live in `examples/` and depend on `attestly-examples` for shared helpers.
 
 ## Core data model
 
-`Attestation` (in `awp-core`) is the central record. Every Worker run, every Verifier run, and every persisted execution composes from it.
+`Attestation` (in `attestly-core`) is the central record. Every Worker run, every Verifier run, and every persisted execution composes from it.
 
 ```mermaid
 classDiagram
@@ -267,7 +267,7 @@ sequenceDiagram
     participant V as Verifier
     participant B as Batcher (bg task)
     participant Buf as buffer (in-memory)
-    participant DB as awp.db (SQLite)
+    participant DB as attestly.db (SQLite)
     participant J1 as attestations.json
 
     Note over U: 12 tasks total
@@ -304,14 +304,14 @@ sequenceDiagram
 ```
 verify_attestation_inclusion(att_id) → true
   given only:
-    - the batch's merkle_root (stored in awp.db)
+    - the batch's merkle_root (stored in attestly.db)
     - the attestation's stored InclusionProof
     - the attestation itself
 
-tamper(att in awp.db) → leaf_hash changes → verify_attestation_inclusion = false
+tamper(att in attestly.db) → leaf_hash changes → verify_attestation_inclusion = false
 ```
 
-**Storage:** `data/awp.db` is the source of truth for batches, batched attestations, and proofs. `attestations.json` and `executions.json` continue to be appended by the Dispatcher for backwards compatibility — see PAIN_POINTS.md synthesis #4 ("three storage models for one prototype").
+**Storage:** `data/attestly.db` is the source of truth for batches, batched attestations, and proofs. `attestations.json` and `executions.json` continue to be appended by the Dispatcher for backwards compatibility — see PAIN_POINTS.md synthesis #4 ("three storage models for one prototype").
 
 ### Flow 4 — Parallel verifiers (Worker → N concurrent Verifiers)
 
@@ -365,7 +365,7 @@ sequenceDiagram
 
 - **Disagreement is unanimous-check, not majority vote.** If 2 out of 3 say "valid" and 1 says "invalid", `disagreement = true` and the consensus status is `Complete{false, false}`. Downstream majority logic is recoverable from `verifier_attestations: Vec<Attestation>`.
 - **Strict failure policy via `try_join_all`.** Any single verifier failure halts the whole stage. Switching to best-effort (use `join_all`, record per-verifier failures inline) is a one-line change but a real product decision left for the human (DECISIONS.md D4.4).
-- **`as_task_execution` projects the N-verifier shape to the Phase 2 single-verifier `TaskExecution`** so the existing `executions.json` reader keeps working. The first verifier becomes the "primary"; the full set is recoverable by reading `attestations.json` by id. PAIN_POINTS.md synthesis #3 flags this as the natural place for a Phase-2-of-AWP coordination-type generalisation.
+- **`as_task_execution` projects the N-verifier shape to the Phase 2 single-verifier `TaskExecution`** so the existing `executions.json` reader keeps working. The first verifier becomes the "primary"; the full set is recoverable by reading `attestations.json` by id. PAIN_POINTS.md synthesis #3 flags this as the natural place for a Phase-2-of-Attestly coordination-type generalisation.
 
 ## Batcher trigger logic
 
@@ -407,17 +407,17 @@ flowchart TD
 |----------|------|--------|--------------|-------|
 | Worker / Verifier attestations | `data/attestations.json` | JSONL (1 `Attestation` / line) | yes | Dispatcher, ParallelDispatcher, examples |
 | Execution records | `data/executions.json` | JSONL (1 `TaskExecutionRecord` / line, id-only) | yes | Dispatcher, ParallelDispatcher |
-| Sealed batches | `data/awp.db` table `batches` | SQLite | INSERT only | Batcher |
-| Batched attestations | `data/awp.db` table `attestations` | SQLite, `INSERT OR IGNORE` + later UPDATE for `batch_id` | upsert | Batcher |
-| Inclusion proofs | `data/awp.db` table `proofs` (1 row per attestation, JSON BLOB `proof_path`) | SQLite | INSERT only | Batcher |
+| Sealed batches | `data/attestly.db` table `batches` | SQLite | INSERT only | Batcher |
+| Batched attestations | `data/attestly.db` table `attestations` | SQLite, `INSERT OR IGNORE` + later UPDATE for `batch_id` | upsert | Batcher |
+| Inclusion proofs | `data/attestly.db` table `proofs` (1 row per attestation, JSON BLOB `proof_path`) | SQLite | INSERT only | Batcher |
 
 The Batcher's SQLite write is one transaction per flush — batch row, all attestation upserts, and all proof rows commit together or not at all.
 
-The Phase 1/2 JSONL logs and the Phase 3 SQLite database overlap intentionally during the prototype: the JSONL logs are the durable record of *every* execution, while SQLite is the authoritative store for the *batched* subset. PAIN_POINTS.md synthesis #4 flags this as untenable for production; collapsing to one model is a Phase-2-of-AWP task.
+The Phase 1/2 JSONL logs and the Phase 3 SQLite database overlap intentionally during the prototype: the JSONL logs are the durable record of *every* execution, while SQLite is the authoritative store for the *batched* subset. PAIN_POINTS.md synthesis #4 flags this as untenable for production; collapsing to one model is a Phase-2-of-Attestly task.
 
 ## Tools
 
-Two tools live in `awp-agents/src/tools.rs`:
+Two tools live in `attestly-agents/src/tools.rs`:
 
 - **`calculate(expression: &str) -> Result<CalculationResult>`** — recursive-descent parser supporting `+ - * /`, parentheses, and unary minus. Used by both Worker (to produce an answer) and Verifier (to independently re-solve).
 - **`verify_attestation`** ships in two forms:
@@ -443,4 +443,4 @@ These appear in the planning docs but are **explicitly deferred** and not presen
 - [`PHASE1_REVIEW.md`](PHASE1_REVIEW.md) — synthesised executive summary of Phase 1's outcome
 - [`DECISIONS.md`](DECISIONS.md) — design decisions log + framework recommendation
 - [`PAIN_POINTS.md`](PAIN_POINTS.md) — friction log + Phase 4 synthesis
-- [`../planning/awp-prototype-plan.md`](../planning/awp-prototype-plan.md) — original 8-week plan + Phase 1 Postmortem
+- [`../planning/attestly-prototype-plan.md`](../planning/attestly-prototype-plan.md) — original 8-week plan + Phase 1 Postmortem

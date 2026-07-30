@@ -1,7 +1,7 @@
 # Compliance
 
-AWP is purpose-built for the procurement conversation at a regulated
-buyer. The receipts AWP produces are the evidence a model-governance
+Attestly is purpose-built for the procurement conversation at a regulated
+buyer. The receipts Attestly produces are the evidence a model-governance
 examiner, a SOC 2 auditor, or a counterparty due-diligence team asks
 for when they say *"show me what the agent did, and prove it wasn't
 edited."*
@@ -14,12 +14,12 @@ the deployment patterns that survive review.
 The Federal Reserve's [SR 11-7 guidance on Model Risk
 Management](https://www.federalreserve.gov/supervisionreg/srletters/sr1107a1.pdf)
 is the de-facto model-governance baseline at U.S. banks and many
-mid-market fintechs. The AWP repo ships a pre-mapping that walks each
+mid-market fintechs. The Attestly repo ships a pre-mapping that walks each
 relevant SR 11-7 requirement onto the corresponding attestation
 schema, identity model, and verification path.
 
 **Authoritative source:**
-[`docs/compliance/SR_11_7.md`](https://github.com/inertialabsxyz/awp/blob/main/docs/compliance/SR_11_7.md)
+[`docs/compliance/SR_11_7.md`](https://github.com/inertialabsxyz/attestly/blob/main/docs/compliance/SR_11_7.md)
 in the repo. The pre-mapping is generic; a deployment-specific mapping
 (your agents, your decision points, your audit artefact format) is the
 deliverable of the design-partner programme described in
@@ -29,7 +29,7 @@ deliverable of the design-partner programme described in
 
 Three questions land in every model-governance review we've seen:
 
-1. **Who acted?** AWP attaches an Ed25519 public key to every
+1. **Who acted?** Attestly attaches an Ed25519 public key to every
    attestation; the `data/identities/<agent_id>.json` store persists
    per-agent keys across restarts so the chain of evidence survives a
    redeploy.
@@ -44,7 +44,7 @@ Three questions land in every model-governance review we've seen:
 ## Worked example — KYC
 
 The repo's `kyc_receipts` demo
-([`examples/kyc_receipts.rs`](https://github.com/inertialabsxyz/awp/blob/main/examples/kyc_receipts.rs))
+([`examples/kyc_receipts.rs`](https://github.com/inertialabsxyz/attestly/blob/main/examples/kyc_receipts.rs))
 walks through three KYC decisions: an APPROVE, a FLAG, and a tampered
 record. The viewer renders the first two green and catches the third
 in red. That's the pattern that maps onto SR 11-7's "model validation
@@ -54,8 +54,8 @@ the challenger.
 Run it:
 
 ```bash
-git clone https://github.com/inertialabsxyz/awp
-cd awp
+git clone https://github.com/inertialabsxyz/attestly
+cd attestly
 cargo run --example kyc_receipts
 open tools/audit-viewer/index.html
 # Drag in data/attestations.jsonl — green / green / red.
@@ -64,7 +64,7 @@ open tools/audit-viewer/index.html
 ## Related frameworks
 
 The pre-mapping in
-[`docs/compliance/`](https://github.com/inertialabsxyz/awp/tree/main/docs/compliance)
+[`docs/compliance/`](https://github.com/inertialabsxyz/attestly/tree/main/docs/compliance)
 covers SR 11-7 today. The architecture is portable to:
 
 - **EU AI Act** — high-risk system audit-trail requirements
@@ -76,15 +76,15 @@ Specific deployment mappings ship as part of design-partner
 engagements; the generic SR 11-7 mapping is the only one in the public
 repo today.
 
-## What AWP is not (compliance edition)
+## What Attestly is not (compliance edition)
 
 - **Not a SOC 2 report.** The Phase 3 deliverable is a SOC 2 Type I
   report attached to the hosted service. The OSS protocol itself does
   not require a SOC 2.
-- **Not an opinion on correctness.** AWP attests to what the agent
+- **Not an opinion on correctness.** Attestly attests to what the agent
   *claimed*. Whether that claim is right under your business rules is
   a model-validation question, not an audit-trail question. Both
-  matter; AWP is purpose-built for the second.
+  matter; Attestly is purpose-built for the second.
 - **Not legal advice.** The mappings on this page are best-effort
   technical alignment; consult your own counsel for jurisdiction-
   specific compliance interpretation.

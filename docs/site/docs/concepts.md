@@ -31,7 +31,7 @@ day for this customer" maps onto exactly one attestation.
 
 The canonical signing-payload bytes are byte-identical across Rust,
 Python, and the in-browser JS verifier — see the cross-language test
-vector in `crates/awp-core/tests/`. A receipt produced by Python
+vector in `crates/attestly-core/tests/`. A receipt produced by Python
 verifies against the static audit viewer the same way a Rust-produced
 one does.
 
@@ -43,7 +43,7 @@ supports three out of the box:
 | Sink | When to use |
 |---|---|
 | `FileSink(path)` | Local-first development; OSS-only deployments where you don't want a hosted dependency. JSONL on disk. |
-| `CloudSink(api_key, endpoint)` | Shipping to AWP Cloud for retention, search, share links. POSTs to the [hosted ingest API](https://github.com/inertialabsxyz/awp/blob/main/services/awp-cloud/API.md). |
+| `CloudSink(api_key, endpoint)` | Shipping to Attestly Cloud for retention, search, share links. POSTs to the [hosted ingest API](https://github.com/inertialabsxyz/attestly/blob/main/services/attestly-cloud/API.md). |
 | `CallableSink(fn)` | Escape hatch — pipe attestations into your own queue, your own S3 prefix, your own auditor's mailbox. |
 
 You can switch sinks any time without losing the receipts you already
@@ -76,7 +76,7 @@ Disagreement is preserved as data, not hidden. The viewer renders a
 disagreement row in amber rather than dropping it.
 
 This is the load-bearing **category claim**: identity products tell
-you who was allowed to act; AWP tells you what they did and proves it
+you who was allowed to act; Attestly tells you what they did and proves it
 by doing it again.
 
 ## Why a tamper-evident log matters
@@ -103,13 +103,13 @@ buyer.
 ## Runnable example
 
 The OSS repo ships a runnable KYC demo at
-[`crates/awp-examples/kyc_receipts.rs`](https://github.com/inertialabsxyz/awp/blob/main/examples/kyc_receipts.rs)
+[`crates/attestly-examples/kyc_receipts.rs`](https://github.com/inertialabsxyz/attestly/blob/main/examples/kyc_receipts.rs)
 that produces three attestations — an approval, a flag, and a tampered
 record — and a static viewer that renders them green / green / red.
 
 ```bash
-git clone https://github.com/inertialabsxyz/awp
-cd awp
+git clone https://github.com/inertialabsxyz/attestly
+cd attestly
 cargo run --example kyc_receipts
 open tools/audit-viewer/index.html
 # Drag in data/attestations.jsonl

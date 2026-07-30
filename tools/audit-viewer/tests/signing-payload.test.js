@@ -4,7 +4,7 @@
 //
 //   1. Static parity: signingPayloadBytes() produces the exact JSON byte
 //      sequence we expect from `Attestation::signing_payload` in
-//      crates/awp-core/src/attestation.rs.
+//      crates/attestly-core/src/attestation.rs.
 //
 //   2. End-to-end: every signature in data/attestations.json verifies under
 //      the vendored ed25519 implementation, using signingPayloadBytes() as

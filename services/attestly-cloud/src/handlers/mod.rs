@@ -1,0 +1,11 @@
+//! HTTP route handlers. One submodule per resource family. The locked HTTP
+//! contract for the entire surface lives in `services/attestly-cloud/API.md`.
+
+pub mod account;
+pub mod attestations;
+pub mod billing;
+pub mod export;
+pub mod health;
+pub mod quickstart;
+pub mod share_links;
+pub mod telemetry;

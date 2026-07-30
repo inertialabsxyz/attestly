@@ -22,11 +22,11 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use awp_agents::{
+use attestly_agents::{
     DispatcherConfig, ParallelDispatcher, Verifier, VerifierAgent, VerifierError, Worker,
     WorkerTask,
 };
-use awp_core::{sha256, AgentKeypair, Attestation, AttestationStatus};
+use attestly_core::{sha256, AgentKeypair, Attestation, AttestationStatus};
 
 /// A verifier that always disagrees — used to drive the disagreement
 /// detection path. Its output is *signed*, just like a real verifier,

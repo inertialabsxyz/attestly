@@ -41,17 +41,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "autocfg"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
-
-[[package]]
-name = "awp-agents"
+name = "attestly-agents"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "awp-core",
+ "attestly-core",
  "chrono",
  "futures",
  "hex",
@@ -64,7 +58,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "awp-core"
+name = "attestly-core"
 version = "0.1.0"
 dependencies = [
  "chrono",
@@ -83,12 +77,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "awp-examples"
+name = "attestly-examples"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "awp-agents",
- "awp-core",
+ "attestly-agents",
+ "attestly-core",
  "chrono",
  "rusqlite",
  "serde_json",
@@ -97,10 +91,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "awp-python"
+name = "attestly-python"
 version = "0.1.0"
 dependencies = [
- "awp-core",
+ "attestly-core",
  "ed25519-dalek",
  "hex",
  "pyo3",
@@ -108,6 +102,12 @@ dependencies = [
  "tempfile",
  "uuid",
 ]
+
+[[package]]
+name = "autocfg"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
 name = "base64ct"
