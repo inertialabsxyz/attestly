@@ -27,6 +27,9 @@ pub enum ApiError {
     #[error("share link not found or expired")]
     LinkNotFound,
 
+    #[error("rate limit exceeded")]
+    RateLimited,
+
     #[error("internal error: {0}")]
     Internal(String),
 }
@@ -39,6 +42,7 @@ impl ApiError {
             ApiError::NotFound => "not_found",
             ApiError::SignatureInvalid(_) => "signature_invalid",
             ApiError::LinkNotFound => "link_not_found",
+            ApiError::RateLimited => "rate_limited",
             ApiError::Internal(_) => "internal",
         }
     }
@@ -50,6 +54,7 @@ impl ApiError {
             ApiError::NotFound => StatusCode::NOT_FOUND,
             ApiError::LinkNotFound => StatusCode::NOT_FOUND,
             ApiError::SignatureInvalid(_) => StatusCode::UNPROCESSABLE_ENTITY,
+            ApiError::RateLimited => StatusCode::TOO_MANY_REQUESTS,
             ApiError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -71,6 +76,7 @@ impl IntoResponse for ApiError {
                 ApiError::NotFound => "no such resource".into(),
                 ApiError::SignatureInvalid(d) => d.clone(),
                 ApiError::LinkNotFound => "share link not found, expired, or revoked".into(),
+                ApiError::RateLimited => "rate limit exceeded, retry shortly".into(),
                 ApiError::Internal(d) => {
                     // Don't leak internals to clients.
                     tracing::error!(detail = %d, "internal error surfaced to client");

@@ -280,7 +280,27 @@ Slugs in use:
 - `not_found` — 404
 - `signature_invalid` — 422, signature did not verify (ingest or retrieval)
 - `link_not_found` — 404, share-link token expired or revoked
+- `rate_limited` — 429, too many requests on a rate-limited route (see below)
 - `internal` — 500, server-side failure with no user-visible cause
+
+## Rate limiting
+
+`POST /v1/attestations` (ingest) and `POST /v1/share-links` (share-link
+creation) are rate limited per API key. Reads, the public share-redemption
+routes (`GET /v1/share-links/{token}`, `GET /share/{token}`), and everything
+else are **not** limited.
+
+The allowance defaults to **120 requests per minute** per key per route and is
+set with the `ATTESTLY_RATELIMIT_PER_MIN` environment variable. The bucket
+holds a full burst and refills continuously, so a client that paces itself is
+never throttled. Over the allowance, the service returns `429 Too Many
+Requests` with the standard envelope and the `rate_limited` slug:
+
+```json
+{ "error": "rate_limited", "detail": "rate limit exceeded, retry shortly" }
+```
+
+Clients should retry after a short backoff.
 
 ## Canonical encoding
 
