@@ -68,6 +68,12 @@ async fn main() -> anyhow::Result<()> {
         .context("postgres connect")?;
     db.apply_migrations().await.context("apply migrations")?;
 
+    // Create the blob root once, at boot. `BlobStore::health` deliberately only
+    // *observes* the root (creating it there would mask an unmounted volume),
+    // so without this a fresh local run would report degraded until the first
+    // ingest. On Fly the volume mount already provides the directory.
+    std::fs::create_dir_all(&blob_root)
+        .with_context(|| format!("create blob root {}", blob_root.display()))?;
     let blob = FsBlobStore::new(&blob_root);
     let stripe = LiveStripeClient::from_env().context("stripe client")?;
     let db: Arc<dyn Db> = Arc::new(db);
