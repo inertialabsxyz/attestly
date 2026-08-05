@@ -12,7 +12,7 @@ renames require a new versioned namespace.
 ## Base URL
 
 ```
-https://app.attestly.xyz/v1/   (staging: https://attestly-cloud-staging.fly.dev/v1/)
+https://app.attestly.xyz/v1/     (single hosted environment — no separate staging)
 http://localhost:8080/v1/        (local dev via docker compose)
 ```
 

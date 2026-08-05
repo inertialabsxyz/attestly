@@ -1,4 +1,4 @@
-app = "attestly-cloud-staging"
+app = "attestly-cloud"
 primary_region = "iad"
 
 [build]
@@ -8,7 +8,7 @@ primary_region = "iad"
   BIND_ADDR    = "0.0.0.0:8080"
   BLOB_ROOT    = "/var/lib/attestly-cloud/blobs"
   RUST_LOG     = "info,attestly_cloud=info"
-  ATTESTLY_CLOUD_BASE_URL = "https://attestly-cloud-staging.fly.dev"
+  ATTESTLY_CLOUD_BASE_URL = "https://app.attestly.xyz"
 
 # DATABASE_URL is supplied as a Fly secret pointing at the managed Neon /
 # Supabase instance — `flyctl secrets set DATABASE_URL=...`.

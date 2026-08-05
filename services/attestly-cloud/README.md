@@ -142,7 +142,7 @@ make check        # cargo fmt + clippy + cargo test
 The test suite runs against the in-memory `Db` and `BlobStore`
 implementations, so `make check` has no external dependencies (no Docker, no
 Postgres) and runs in seconds. The Postgres impl is exercised by the seed
-binary and by the staging deploy; behaviour is pinned by the trait
+binary and by the live deploy; behaviour is pinned by the trait
 contract.
 
 ## Verifying the tamper guarantee by hand
@@ -166,18 +166,24 @@ curl -s -H "x-api-key: $TEST_KEY" "http://localhost:8080/v1/attestations/$ID"
 # → {"error":"signature_invalid","detail":"...possible tamper at rest"}
 ```
 
-## Staging deploy
+## Deploy
+
+The pilot runs a **single environment** at `app.attestly.xyz` on Fly.io (app
+`attestly-cloud`, region `iad`) with managed Postgres on Neon — there is **no
+separate staging**. First deploy and all secrets are run locally via `flyctl`:
 
 ```bash
-flyctl launch --no-deploy --copy-config --name attestly-cloud-staging
+flyctl launch --no-deploy --copy-config --name attestly-cloud
 flyctl secrets set DATABASE_URL=postgresql://...   # Neon connection string
-flyctl secrets set ATTESTLY_CLOUD_BASE_URL=https://attestly-cloud-staging.fly.dev
+flyctl secrets set ATTESTLY_ADMIN_KEY=...           # strong secret; boot fails without it
 flyctl deploy --config fly.toml
-flyctl status      # https://attestly-cloud-staging.fly.dev/healthz must return 200
+flyctl status      # https://app.attestly.xyz/healthz must return 200
 ```
 
-The DNS for the production `app.attestly.xyz` cutover is **not** an agent
-action; it's tracked in Step 6's founder-led tasks.
+Point `app.attestly.xyz` DNS at the Fly app and add it as a Fly cert
+(`flyctl certs add app.attestly.xyz`) so `force_https` serves the custom domain.
+The apex `attestly.xyz` remains the marketing/landing site (`tools/landing-page/`);
+only the `app.` subdomain serves this service.
 
 ## Limitations and deliberate omissions
 
@@ -193,7 +199,7 @@ them as gaps:
   populated from day one so retroactive metered billing is possible.
 - **No S3 blob backend yet.** The filesystem impl is the v0.1 production
   blob store, deployed to a Fly volume. The trait is the seam; S3 lands when
-  the staging deploy moves off Fly volumes.
+  the deployment scales past a single Fly volume.
 - **API-key auth is per-row Argon2 scan.** Fine for v0.1's key population
   (single digits per account). A fast lookup column is a Phase-3 perf
   upgrade.
