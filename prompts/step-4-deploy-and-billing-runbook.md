@@ -18,6 +18,17 @@ small config/doc changes those items require — then execute the parts that are
 safe to execute (staging deploy, Stripe **test mode**) and record the results.
 Read §1, §2, and §4 carefully, and skim "Explicitly out of scope."
 
+**Platform is decided — do not re-evaluate it.** The pilot deploys to **Fly.io**
+(app `attestly-cloud-staging`, region `iad`) with managed **Postgres on Neon**
+(free tier for the pilot) as `DATABASE_URL`, and blob storage on the **Fly
+persistent volume**. Do not propose or document Render/Railway/VPS/Vercel
+alternatives or Supabase — write the runbook specifically for **Fly + Neon**.
+The **first deploy and all `flyctl secrets` are run locally** from the
+operator's machine; GitHub Actions CD is **deferred** (revisit only when more
+than one person deploys) — you may include a commented-out
+`.github/workflows/deploy-cloud.yml` sketch marked deferred, but the pilot path
+is local `flyctl deploy`.
+
 You add **no production Rust** — all the code is merged. What you produce is:
 (1) a checked-in runbook others can re-run, (2) any `fly.toml` / config / README
 adjustments the checklist implies, and (3) captured evidence that the live flow
@@ -78,8 +89,9 @@ top-level docs).
 1. **Deploy the hosted service (§1).** Runbook section with the exact,
    copy-pasteable sequence and expected output for each:
    - `flyctl deploy` for `attestly-cloud-staging`.
-   - Provision managed Postgres (Neon/Supabase per README) and
-     `flyctl secrets set DATABASE_URL=...`.
+   - Provision managed Postgres on **Neon** (free tier for the pilot) and
+     `flyctl secrets set DATABASE_URL=...` with the Neon connection string
+     (include the `?sslmode=require` / pooled-vs-direct guidance Neon needs).
    - Set `ATTESTLY_ADMIN_KEY` to a **strong** secret (`flyctl secrets set` —
      stress that Step 1 makes an unset/placeholder key **fail boot**, so this is
      mandatory, and note how to generate one).
@@ -121,10 +133,10 @@ top-level docs).
      `[BLOCKED — needs <account>]` with the precise steps ready to run.
 
 4. **Automated Postgres backups + documented restore (§4).**
-   - Enable automated backups on the managed provider (Neon/Supabase point-in-time
-     or scheduled snapshots) and document the setting.
-   - Write a **restore procedure** that a human can follow under pressure:
-     provider restore → new `DATABASE_URL` → `flyctl secrets set` →
+   - Enable automated backups on **Neon** (point-in-time restore / branch-based
+     recovery) and document the setting and retention window for the pilot tier.
+   - Write a **restore procedure** that a human can follow under pressure: Neon
+     restore/branch → new `DATABASE_URL` → `flyctl secrets set` →
      redeploy/restart → `GET /healthz` green → spot-check a known attestation.
    - Add a short "Backups & restore" subsection to
      `services/attestly-cloud/README.md` linking the runbook.
