@@ -12,7 +12,7 @@ use attestly_cloud::blob::memory::MemBlobStore;
 use attestly_cloud::store::memory::MemDb;
 use attestly_cloud::store::{Account, Db, Plan};
 use attestly_cloud::stripe::MockStripeClient;
-use attestly_cloud::{router, AppState, BillingConfig};
+use attestly_cloud::{router, router_with_rate_limit, AppState, BillingConfig};
 use attestly_core::{signing::AgentKeypair, Attestation, AttestationStatus};
 use axum::body::Body;
 use axum::http::{Request, Response, StatusCode};
@@ -22,6 +22,14 @@ use tower::util::ServiceExt;
 
 pub struct Harness {
     pub state: AppState,
+    /// Per-minute rate limit applied to the write routes. Defaults to
+    /// [`attestly_cloud::ratelimit::DEFAULT_PER_MINUTE`] so ordinary tests
+    /// never trip it; `rate_limit.rs` pins a low value to observe a 429
+    /// deterministically. Held here rather than read from the environment so
+    /// one test can't perturb another running in parallel.
+    // reason: only the rate_limit binary constructs a non-default value.
+    #[allow(dead_code)]
+    pub rate_limit_per_min: u32,
     // reason: per-test-binary dead-code analysis flags this in binaries
     // that don't read it directly. Other binaries (search.rs, ingest.rs) do.
     #[allow(dead_code)]
@@ -45,6 +53,20 @@ impl Harness {
     // pin the share-link base URL); other test binaries use `new()`.
     #[allow(dead_code)]
     pub async fn with_billing(billing: BillingConfig) -> Self {
+        Self::with_billing_and_rate_limit(billing, attestly_cloud::ratelimit::DEFAULT_PER_MINUTE)
+            .await
+    }
+
+    /// Harness with an explicit per-minute write-route rate limit. Lets
+    /// `rate_limit.rs` pin a limit low enough to trip in a handful of
+    /// requests without wall-clock sleeps.
+    // reason: only the rate_limit binary needs a non-default limit.
+    #[allow(dead_code)]
+    pub async fn with_rate_limit(per_min: u32) -> Self {
+        Self::with_billing_and_rate_limit(BillingConfig::for_tests(), per_min).await
+    }
+
+    async fn with_billing_and_rate_limit(billing: BillingConfig, rate_limit_per_min: u32) -> Self {
         let db: Arc<dyn Db> = Arc::new(MemDb::new());
         let blob = Arc::new(MemBlobStore::new());
         let account = db.create_account("test@local", Plan::Team).await.unwrap();
@@ -60,6 +82,7 @@ impl Harness {
             account,
             api_key: cleartext,
             stripe,
+            rate_limit_per_min,
         }
     }
 
@@ -84,9 +107,31 @@ impl Harness {
         (acct, key)
     }
 
+    /// Send one request through a **freshly built** router.
+    ///
+    /// Each call constructs its own router, and therefore its own rate-limiter
+    /// buckets — so ordinary tests can't accumulate against the limit no
+    /// matter how many requests they make. Tests that need the limiter to
+    /// actually count across requests must use [`Harness::app`] and hold one
+    /// router for the whole sequence.
+    // reason: rate_limit.rs drives a persistent router via `app()` instead and
+    // never calls this; every other binary does.
+    #[allow(dead_code)]
     pub async fn send(&self, req: Request<Body>) -> Response<Body> {
         let app = router(self.state.clone());
         app.oneshot(req).await.unwrap()
+    }
+
+    /// Build one long-lived router at this harness's rate limit.
+    ///
+    /// The limiter's token buckets live in the router, so a caller that wants
+    /// to observe throttling must reuse a single instance across requests
+    /// (clone it per `oneshot` — `oneshot` consumes the service, but a clone
+    /// shares the same buckets).
+    // reason: only the rate_limit binary needs a persistent router.
+    #[allow(dead_code)]
+    pub fn app(&self) -> axum::Router {
+        router_with_rate_limit(self.state.clone(), self.rate_limit_per_min)
     }
 }
 

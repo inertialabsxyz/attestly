@@ -176,6 +176,7 @@ separate staging**. First deploy and all secrets are run locally via `flyctl`:
 flyctl launch --no-deploy --copy-config --name attestly-cloud
 flyctl secrets set DATABASE_URL=postgresql://...   # Neon connection string
 flyctl secrets set ATTESTLY_ADMIN_KEY=...           # strong secret; boot fails without it
+flyctl secrets set ATTESTLY_RATELIMIT_PER_MIN=120   # optional; per-key write limit, default 120
 flyctl deploy --config fly.toml
 flyctl status      # https://app.attestly.xyz/healthz must return 200
 ```

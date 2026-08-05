@@ -43,6 +43,7 @@ pub mod blob;
 pub mod canonical;
 pub mod error;
 pub mod handlers;
+pub mod ratelimit;
 pub mod state;
 pub mod store;
 pub mod stripe;
@@ -55,15 +56,33 @@ use axum::response::Redirect;
 use axum::routing::{delete, get, post};
 use axum::Router;
 
-/// Build the application router from a fully-constructed [`AppState`].
+/// Build the application router from a fully-constructed [`AppState`], with
+/// the rate limit read from the environment
+/// ([`ratelimit::per_minute_from_env`]).
 pub fn router(state: AppState) -> Router {
-    Router::new()
+    router_with_rate_limit(state, ratelimit::per_minute_from_env())
+}
+
+/// [`router`] with an explicit per-minute rate limit on the write routes.
+///
+/// The seam exists so `tests/rate_limit.rs` can pin a low limit and observe a
+/// 429 deterministically, without mutating process-wide env state that would
+/// race the rest of the suite.
+pub fn router_with_rate_limit(state: AppState, rate_limit_per_min: u32) -> Router {
+    // Ingest and share-link creation are the two write paths §4 names. They
+    // carry the limiter; everything else — including the public share
+    // redemption GET an auditor depends on — is merged in unthrottled.
+    let rate_limited = Router::new()
+        .route("/v1/attestations", post(handlers::attestations::ingest))
+        .route("/v1/share-links", post(handlers::share_links::create))
+        .layer(ratelimit::layer(rate_limit_per_min))
+        .with_state(state.clone());
+
+    let app = Router::new()
         .route("/", get(|| async { Redirect::permanent("/dashboard") }))
         .route("/healthz", get(handlers::health::healthz))
-        .route("/v1/attestations", post(handlers::attestations::ingest))
         .route("/v1/attestations", get(handlers::attestations::search))
         .route("/v1/attestations/:id", get(handlers::attestations::get_one))
-        .route("/v1/share-links", post(handlers::share_links::create))
         .route(
             "/v1/share-links/:token",
             get(handlers::share_links::get_json),
@@ -110,5 +129,7 @@ pub fn router(state: AppState) -> Router {
             "/v1/admin/telemetry/conversion-ready",
             get(handlers::telemetry::conversion_ready),
         )
-        .with_state(state)
+        .with_state(state);
+
+    app.merge(rate_limited)
 }
