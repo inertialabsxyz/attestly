@@ -38,6 +38,13 @@ pub struct Harness {
 
 impl Harness {
     pub async fn new() -> Self {
+        Self::with_billing(BillingConfig::for_tests()).await
+    }
+
+    // reason: only share_links.rs injects a non-default billing config (to
+    // pin the share-link base URL); other test binaries use `new()`.
+    #[allow(dead_code)]
+    pub async fn with_billing(billing: BillingConfig) -> Self {
         let db: Arc<dyn Db> = Arc::new(MemDb::new());
         let blob = Arc::new(MemBlobStore::new());
         let account = db.create_account("test@local", Plan::Team).await.unwrap();
@@ -47,7 +54,7 @@ impl Harness {
             .await
             .unwrap();
         let stripe = Arc::new(MockStripeClient::new());
-        let state = AppState::new(db, blob, stripe.clone(), BillingConfig::for_tests());
+        let state = AppState::new(db, blob, stripe.clone(), billing);
         Self {
             state,
             account,
