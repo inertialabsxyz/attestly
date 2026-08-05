@@ -621,6 +621,14 @@ if (existing) {{
     )
 }
 
+/// Stable marker identifying the tamper banner page.
+///
+/// Emitted as a `data-` attribute so tests (and the live-host smoke in the
+/// production checklist) can assert the red-banner page rendered without
+/// depending on prose, styling, or the wording of `detail` — any of which can
+/// change without the guarantee changing.
+pub const TAMPERED_PAGE_MARKER: &str = "attestly-verification-failed";
+
 /// Banner page for share links whose underlying attestations failed
 /// re-verification. We render this in place of the receipts so an auditor
 /// sees the tamper signal directly rather than an opaque HTTP error.
@@ -633,7 +641,7 @@ pub fn tampered_html(detail: &str) -> String {
 <title>Attestly Cloud — verification failed</title>
 <link rel="stylesheet" href="/static/viewer.css">
 </head>
-<body>
+<body data-attestly-state="{TAMPERED_PAGE_MARKER}">
 <header>
   <h1 style="color: var(--red, #a02020)">Verification failed</h1>
   <p class="lede"><strong>One or more attestations at this share link failed re-verification.</strong></p>
