@@ -41,9 +41,11 @@ root runs `cloud-check`). Concrete current state:
 - **`src/handlers/share_links.rs`** — `public_url_for` (`share_links.rs:148-154`)
   **re-reads `ATTESTLY_CLOUD_BASE_URL` directly from the environment** and
   defaults to `https://app.attestly.xyz`, **bypassing `BillingConfig.base_url`**.
-  This is the bug behind the checklist note "today it returns the placeholder
-  `app.attestly.xyz`": there are two independent reads of the same var, and the
-  share-link path uses the one that ignores config.
+  This is the bug behind the checklist note about the base URL: there are two
+  independent reads of the same var, and the share-link path uses the one that
+  ignores config. (`https://app.attestly.xyz` is the **correct production host**
+  — the single environment; the bug is the *duplicate read*, not the value.
+  Collapsing to one read via `BillingConfig` is the fix.)
 - **`src/handlers/health.rs`** — `GET /healthz` → `healthz()` (`health.rs:12`)
   pings **only** the DB (`state.db.ping()`) and returns 200
   `{"status":"ok","version":<CARGO_PKG_VERSION>}` or 503 `{"status":"degraded",...}`.
@@ -53,8 +55,9 @@ root runs `cloud-check`). Concrete current state:
   `handlers` receive `State<AppState>`, so they can reach `state.billing.base_url`.
 - Config is read inline in `main.rs` + `BillingConfig::from_env()`; there is no
   single unified `Config` struct and no `dotenv`. `fly.toml` sets
-  `ATTESTLY_CLOUD_BASE_URL=https://attestly-cloud-staging.fly.dev`; Stripe vars
-  and `DATABASE_URL` are Fly **secrets** (not in `fly.toml`).
+  `ATTESTLY_CLOUD_BASE_URL=https://app.attestly.xyz` (the single pilot
+  environment — no staging); Stripe vars and `DATABASE_URL` are Fly **secrets**
+  (not in `fly.toml`).
 - Tests are entirely in-memory (`tests/common/mod.rs` `Harness` over `MemDb` +
   `MemBlobStore`, driven via `tower::ServiceExt::oneshot`); `BillingConfig::for_tests()`
   supplies config. There is **no Postgres test harness** — do not add one.
@@ -79,8 +82,9 @@ Make three fixes, each its own logical commit with a test.
      that constructs the `Harness` with a **non-default** `base_url` (extend
      `BillingConfig::for_tests()` or the harness so the test can inject one),
      creates a share link, and asserts the returned `url` starts with that
-     injected base — proving the config value, not the `app.attestly.xyz`
-     placeholder, is what surfaces. If `for_tests()` currently hard-codes a base,
+     injected base — proving the value flows from `BillingConfig`, not a second
+     independent env read, so it can never diverge from the configured host. If
+     `for_tests()` currently hard-codes a base,
      make it overridable without breaking existing callers (add a helper or an
      optional param; do not change the default any existing test relies on).
 

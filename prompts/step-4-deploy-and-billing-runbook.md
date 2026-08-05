@@ -15,11 +15,13 @@ the deployment, Stripe-billing, hardening-alert, and backup items in
 [`docs/PRODUCTION_CHECKLIST.md`](../docs/PRODUCTION_CHECKLIST.md) **§1**, **§2**,
 and the two remaining **§4** items, and produce a **repeatable runbook** plus the
 small config/doc changes those items require — then execute the parts that are
-safe to execute (staging deploy, Stripe **test mode**) and record the results.
+safe to execute (the deploy to `app.attestly.xyz`, Stripe **test mode**) and
+record the results.
 Read §1, §2, and §4 carefully, and skim "Explicitly out of scope."
 
 **Platform is decided — do not re-evaluate it.** The pilot deploys to **Fly.io**
-(app `attestly-cloud-staging`, region `iad`) with managed **Postgres on Neon**
+(app `attestly-cloud`, region `iad`, single environment at `app.attestly.xyz` —
+no separate staging) with managed **Postgres on Neon**
 (free tier for the pilot) as `DATABASE_URL`, and blob storage on the **Fly
 persistent volume**. Do not propose or document Render/Railway/VPS/Vercel
 alternatives or Supabase — write the runbook specifically for **Fly + Neon**.
@@ -40,14 +42,16 @@ works. Where an action requires credentials or a live account you don't have,
 
 Concrete current state (verified in the repo):
 
-- **`services/attestly-cloud/fly.toml`** — `app = "attestly-cloud-staging"`,
+- **`services/attestly-cloud/fly.toml`** — `app = "attestly-cloud"`,
   `primary_region = "iad"`, `force_https = true`, `min_machines_running = 1`.
   `[env]` sets `BIND_ADDR`, `BLOB_ROOT=/var/lib/attestly-cloud/blobs`,
   `RUST_LOG=info,attestly_cloud=info`,
-  `ATTESTLY_CLOUD_BASE_URL=https://attestly-cloud-staging.fly.dev`. `[mounts]`
+  `ATTESTLY_CLOUD_BASE_URL=https://app.attestly.xyz`. `[mounts]`
   binds volume `attestly_cloud_blobs` → `/var/lib/attestly-cloud/blobs` (matches
   `BLOB_ROOT`). `[http_service.checks.healthz]` GETs `/healthz` every 10s.
   `DATABASE_URL` and all `STRIPE_*` are **Fly secrets**, not in `fly.toml`.
+  **There is one environment — `app.attestly.xyz` — no separate staging;** the
+  apex `attestly.xyz` stays the landing site (`tools/landing-page/`).
 - **Env the running binary needs** (from Step 1's single-sourced config):
   `DATABASE_URL` (required, no default — boot fails without it), `BLOB_ROOT`,
   `ATTESTLY_CLOUD_BASE_URL`, **`ATTESTLY_ADMIN_KEY`** (Step 1 makes boot
@@ -88,7 +92,8 @@ top-level docs).
 
 1. **Deploy the hosted service (§1).** Runbook section with the exact,
    copy-pasteable sequence and expected output for each:
-   - `flyctl deploy` for `attestly-cloud-staging`.
+   - `flyctl deploy` for the single app `attestly-cloud` (there is no staging;
+     `app.attestly.xyz` is the one environment).
    - Provision managed Postgres on **Neon** (free tier for the pilot) and
      `flyctl secrets set DATABASE_URL=...` with the Neon connection string
      (include the `?sslmode=require` / pooled-vs-direct guidance Neon needs).
@@ -97,14 +102,16 @@ top-level docs).
      mandatory, and note how to generate one).
    - Confirm the blob volume mounts at `BLOB_ROOT` and **survives a machine
      restart** — include the `flyctl machine restart` + re-fetch-a-blob check.
-   - Confirm `ATTESTLY_CLOUD_BASE_URL` resolves to the real host and, thanks to
-     Step 1, **share-link `url`s now use it** (no more `app.attestly.xyz`) — the
-     smoke test below proves this.
-   - Point real DNS + TLS at the app (custom domain wiring on top of Fly's
-     `force_https`).
-   - **Live smoke test:** `GET /healthz` → `200 {"status":"ok",...}`, then the
-     full **ingest → search → share-link** flow **over HTTPS**, asserting the
-     returned share `url` contains the real host (not the placeholder).
+   - Point **`app.attestly.xyz` DNS** at the Fly app and add the cert
+     (`flyctl certs add app.attestly.xyz`) so Fly's `force_https` serves the
+     custom domain. `ATTESTLY_CLOUD_BASE_URL` is already `https://app.attestly.xyz`
+     in `fly.toml`, so — thanks to Step 1's single-source fix — **share-link
+     `url`s resolve to `app.attestly.xyz`**; the smoke test below proves it.
+     (The apex `attestly.xyz` stays the landing site — do not point it here.)
+   - **Live smoke test:** `GET https://app.attestly.xyz/healthz` →
+     `200 {"status":"ok",...}`, then the full **ingest → search → share-link**
+     flow **over HTTPS**, asserting the returned share `url` starts with
+     `https://app.attestly.xyz/share/`.
 
 2. **Billing (Stripe), verified end to end in test mode (§2).** Runbook section:
    - Set `STRIPE_API_KEY`, `STRIPE_API_BASE`, `STRIPE_TEAM_PRICE_ID`,
@@ -204,14 +211,14 @@ test -f services/attestly-cloud/docs/PILOT_RUNBOOK.md && echo present
 # → present, with §1 deploy, §2 Stripe test-mode, §4 alert/backup/live-tamper sections
 
 # Live smoke test (once deployed — from the runbook):
-curl -s https://<real-host>/healthz
+curl -s https://app.attestly.xyz/healthz
 # → 200 {"status":"ok","version":"..."}
 
-# Full flow over HTTPS returns a share url on the REAL host (Step 1 payoff):
-#   ingest → search → create share-link → url starts with https://<real-host>/share/...
-#   (NOT https://app.attestly.xyz) — captured in the runbook.
+# Full flow over HTTPS returns a share url on the real host (Step 1 payoff):
+#   ingest → search → create share-link → url starts with https://app.attestly.xyz/share/...
+#   — captured in the runbook.
 
 # Live tamper check (from the runbook):
-#   GET /v1/share-links/<token> → HTTP 422 signature_invalid
-#   GET /share/<token>          → red-banner tampered page
+#   GET https://app.attestly.xyz/v1/share-links/<token> → HTTP 422 signature_invalid
+#   GET https://app.attestly.xyz/share/<token>          → red-banner tampered page
 ```
