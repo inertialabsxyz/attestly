@@ -23,6 +23,14 @@ from pathlib import Path
 import pytest
 
 
+# Identity files are local secrets and must never be committed, so the real
+# store is off limits to tests. Anchor at the repo root rather than the cwd —
+# same convention as `cross_language.py` — so the check inspects the actual
+# `data/identities/` no matter where pytest is invoked from.
+REPO_ROOT = Path(__file__).resolve().parents[3]
+REAL_IDENTITIES_DIR = REPO_ROOT / "data" / "identities"
+
+
 # Runs in a *fresh* interpreter: resolve the identity through the same
 # `load_or_create` entry point the SDK uses and print its pubkey as hex.
 _PRINT_PUBKEY_SNIPPET = """
@@ -64,9 +72,9 @@ def test_identity_survives_restart(tmp_path: Path) -> None:
     random key in each process and this assertion would fail.
     """
     first = _pubkey_in_fresh_process(tmp_path, "restart-agent")
-    assert not (Path("data") / "identities" / "restart-agent.json").exists(), (
-        "test must stay hermetic — identities belong under tmp_path, "
-        "never in the real data/identities/"
+    assert not (REAL_IDENTITIES_DIR / "restart-agent.json").exists(), (
+        f"test leaked an identity into the real store at {REAL_IDENTITIES_DIR} — "
+        "test identities belong under tmp_path"
     )
     assert (tmp_path / "restart-agent.json").exists(), (
         "load_or_create did not persist the identity to disk"
