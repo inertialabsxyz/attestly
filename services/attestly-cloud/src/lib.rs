@@ -49,7 +49,7 @@ pub mod stripe;
 pub mod sweeper;
 pub mod web;
 
-pub use state::{AppState, BillingConfig};
+pub use state::{admin_key_is_insecure, AppState, BillingConfig, ADMIN_KEY_PLACEHOLDER};
 
 use axum::response::Redirect;
 use axum::routing::{delete, get, post};
