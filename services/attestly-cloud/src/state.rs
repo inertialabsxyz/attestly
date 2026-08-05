@@ -53,6 +53,14 @@ impl BillingConfig {
             admin_key: "admin-test".into(),
         }
     }
+
+    /// [`BillingConfig::for_tests`] with `base_url` overridden. Lets a test
+    /// pin a non-default host and prove the share-link URL is derived from
+    /// this config rather than from a second, independent env read.
+    pub fn with_base_url(mut self, base_url: impl Into<String>) -> Self {
+        self.base_url = base_url.into();
+        self
+    }
 }
 
 /// The fully-wired application state. Cheap to clone (everything inside is

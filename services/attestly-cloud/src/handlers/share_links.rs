@@ -121,7 +121,7 @@ pub async fn create(
         revoked_at: None,
     };
     state.db.create_share_link(link.clone()).await?;
-    let url = public_url_for(&token);
+    let url = public_url_for(&state.billing.base_url, &token);
     Ok((
         StatusCode::CREATED,
         Json(CreateShareLinkResponse {
@@ -145,12 +145,14 @@ fn generate_token() -> String {
     base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes)
 }
 
-fn public_url_for(token: &str) -> String {
-    // The placeholder app domain — the real domain is wired by the operator
-    // at deploy time via `ATTESTLY_CLOUD_BASE_URL`. Tests don't care.
-    let base = std::env::var("ATTESTLY_CLOUD_BASE_URL")
-        .unwrap_or_else(|_| "https://app.attestly.xyz".to_string());
-    format!("{base}/share/{token}")
+/// Build the public share URL from the configured base.
+///
+/// `base` is always [`crate::BillingConfig::base_url`] — the single read of
+/// `ATTESTLY_CLOUD_BASE_URL` in the service. Reading the environment a second
+/// time here would let the advertised host silently diverge from the
+/// configured one.
+fn public_url_for(base: &str, token: &str) -> String {
+    format!("{}/share/{token}", base.trim_end_matches('/'))
 }
 
 #[derive(Serialize)]

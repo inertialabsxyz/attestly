@@ -3,6 +3,7 @@
 
 mod common;
 
+use attestly_cloud::BillingConfig;
 use attestly_core::signing::AgentKeypair;
 use attestly_core::Attestation;
 use axum::http::StatusCode;
@@ -36,6 +37,36 @@ async fn create_share_link_with_ids_returns_token() {
     assert_eq!(status, StatusCode::CREATED);
     assert!(body["token"].as_str().unwrap().len() >= 40);
     assert!(body["url"].as_str().unwrap().contains("/share/"));
+}
+
+/// The advertised `url` must be built from `BillingConfig.base_url`, not from
+/// a second, independent read of `ATTESTLY_CLOUD_BASE_URL`. A duplicate env
+/// read would let the share host silently diverge from the configured one —
+/// this test pins a base the environment does not supply, so it fails if the
+/// handler ever goes back to reading the environment itself.
+#[tokio::test]
+async fn share_link_url_uses_configured_base_url() {
+    let h = Harness::with_billing(
+        BillingConfig::for_tests().with_base_url("https://receipts.example.test"),
+    )
+    .await;
+    let att = ingest_one(&h).await;
+    let resp = h
+        .send(post_json(
+            "/v1/share-links",
+            &h.api_key,
+            json!({"attestation_ids": [att.id.to_string()]}),
+        ))
+        .await;
+    let (status, body) = body_json(resp).await;
+    assert_eq!(status, StatusCode::CREATED);
+    let url = body["url"].as_str().unwrap();
+    let token = body["token"].as_str().unwrap();
+    assert_eq!(
+        url,
+        format!("https://receipts.example.test/share/{token}"),
+        "share url must be derived from BillingConfig.base_url"
+    );
 }
 
 #[tokio::test]
