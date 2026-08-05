@@ -30,6 +30,12 @@ pub trait BlobStore: Send + Sync + 'static {
     /// unknown.
     async fn get(&self, sha256_hex: &str) -> Result<Option<Vec<u8>>, ApiError>;
 
+    /// Cheap liveness probe for `GET /healthz`. Confirms the backing store is
+    /// reachable without writing anything — the healthcheck runs every 10s
+    /// (see `fly.toml`), so a `put`/`get` round-trip per hit would be wasteful
+    /// and would put churn on the blob volume.
+    async fn health(&self) -> Result<(), ApiError>;
+
     /// Replace the bytes at a key. **For tests only** — production callers
     /// must not mutate at-rest bytes. The handler-layer tamper test calls
     /// this to simulate a corruption between write and read.

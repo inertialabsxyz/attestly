@@ -80,6 +80,24 @@ impl BlobStore for FsBlobStore {
         }
     }
 
+    async fn health(&self) -> Result<(), ApiError> {
+        // The failure this catches is the Fly volume not being mounted at
+        // `BLOB_ROOT` — the store is then silently writing into the container's
+        // ephemeral layer. `create_dir_all` is a no-op when the root already
+        // exists, and on a missing mount it fails, which is exactly the signal
+        // we want. No blob is written, so this is safe at healthcheck cadence.
+        fs::create_dir_all(&self.root)
+            .await
+            .map_err(|e| ApiError::Internal(format!("blob root unavailable: {e}")))?;
+        let meta = fs::metadata(&self.root)
+            .await
+            .map_err(|e| ApiError::Internal(format!("blob root unavailable: {e}")))?;
+        if meta.permissions().readonly() {
+            return Err(ApiError::Internal("blob root is read-only".into()));
+        }
+        Ok(())
+    }
+
     async fn tamper_for_test(&self, sha256_hex: &str, bytes: &[u8]) -> Result<(), ApiError> {
         let path = self.path_for(sha256_hex);
         if let Some(parent) = path.parent() {
@@ -91,5 +109,46 @@ impl BlobStore for FsBlobStore {
             .await
             .map_err(|e| ApiError::Internal(format!("blob tamper write: {e}")))?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn health_passes_on_a_usable_root() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = FsBlobStore::new(dir.path());
+        assert!(store.health().await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn health_creates_a_missing_root_without_writing_a_blob() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("not-yet-created");
+        let store = FsBlobStore::new(&root);
+        assert!(store.health().await.is_ok());
+        // The probe is liveness-only: it must leave the store empty.
+        let mut entries = fs::read_dir(&root).await.unwrap();
+        assert!(
+            entries.next_entry().await.unwrap().is_none(),
+            "health probe must not write any blob"
+        );
+    }
+
+    #[tokio::test]
+    async fn health_fails_when_the_root_is_not_a_directory() {
+        // Stands in for the real failure mode this probe exists to catch: the
+        // Fly volume is not mounted at BLOB_ROOT, so the path is unusable.
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("a-file");
+        fs::write(&file, b"not a directory").await.unwrap();
+        let store = FsBlobStore::new(&file);
+        let err = store.health().await.unwrap_err();
+        assert!(
+            matches!(err, ApiError::Internal(ref m) if m.contains("blob root unavailable")),
+            "expected a blob-root failure, got {err:?}"
+        );
     }
 }

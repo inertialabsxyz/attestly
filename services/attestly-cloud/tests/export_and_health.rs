@@ -7,7 +7,11 @@ use axum::http::StatusCode;
 use common::{
     body_json, body_text, get_authed, get_public, make_signed_attestation, post_json, Harness,
 };
+use tower::util::ServiceExt;
 
+/// `/healthz` probes Postgres *and* blob storage (see `health.rs`). On a
+/// healthy harness both are reachable, so the contract is 200 `status: "ok"`
+/// with a version.
 #[tokio::test]
 async fn healthz_reports_ok() {
     let h = Harness::new().await;
@@ -15,6 +19,42 @@ async fn healthz_reports_ok() {
     let (status, body) = body_json(resp).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["status"], "ok");
+    assert!(
+        body["version"].as_str().is_some_and(|v| !v.is_empty()),
+        "healthz must report a version"
+    );
+}
+
+/// The blob half of the contract: when blob storage is unreachable, `/healthz`
+/// must report degraded in the same 503 shape used for a DB failure — not 200.
+/// Uses an `FsBlobStore` rooted at a regular file, standing in for the Fly
+/// volume failing to mount at `BLOB_ROOT`.
+#[tokio::test]
+async fn healthz_reports_degraded_when_blob_storage_is_unreachable() {
+    let dir = tempfile::tempdir().unwrap();
+    let not_a_dir = dir.path().join("blob-root-is-a-file");
+    std::fs::write(&not_a_dir, b"x").unwrap();
+
+    let h = Harness::new().await;
+    let state = attestly_cloud::AppState::new(
+        h.state.db.clone(),
+        std::sync::Arc::new(attestly_cloud::blob::filesystem::FsBlobStore::new(
+            &not_a_dir,
+        )),
+        h.state.stripe.clone(),
+        h.state.billing.clone(),
+    );
+    let resp = attestly_cloud::router(state)
+        .oneshot(get_public("/healthz"))
+        .await
+        .unwrap();
+    let (status, body) = body_json(resp).await;
+    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(body["status"], "degraded");
+    assert!(
+        body["detail"].as_str().is_some_and(|d| !d.is_empty()),
+        "degraded response must carry a detail"
+    );
 }
 
 #[tokio::test]
