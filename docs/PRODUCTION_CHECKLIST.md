@@ -72,9 +72,15 @@ Disk-backed identity exists in the core
       `agent-kyc-01` → `6c654550…` in two fresh interpreters and in its
       `GET /v1/attestations/{id}` payload; `agent-kyc-02` (verifier) correctly
       carries a distinct stable key.
-- [ ] Add a regression test asserting identity survives a restart (guards the
+- [x] Add a regression test asserting identity survives a restart (guards the
       `load_or_create` default against a future swap to `generate()`). This is
       the only remaining work on this item — the substance is already proven.
+      Landed as
+      [`crates/attestly-python/tests/test_identity_restart.py`](../crates/attestly-python/tests/test_identity_restart.py):
+      two separately spawned interpreters sharing a `tmp_path` identities dir
+      must print the same pubkey, and a third with a different `agent_id` must
+      differ. Verified the guard bites — swapping the snippet to `generate()`
+      fails the test.
 
 ### 4. Minimum production hardening
 - [ ] Auth: confirm every `/v1/*` route requires a valid API key; no
