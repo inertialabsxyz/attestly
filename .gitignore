@@ -1,6 +1,9 @@
 target/
 data/*
 !data/.gitkeep
+
+# macOS finder metadata
+.DS_Store
 attestations.json
 executions.json
 
