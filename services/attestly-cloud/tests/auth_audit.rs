@@ -17,8 +17,9 @@
 //!   not by oversight.
 //!
 //! Adding a route to `lib.rs` without adding a row here is the failure mode
-//! this test exists to catch, so keep the tables exhaustive: [`route_tables_cover_every_route`]
-//! asserts the row count matches the router's route count.
+//! this test exists to catch, so keep the tables exhaustive:
+//! [`route_tables_cover_every_route`] counts the `.route(` calls in `lib.rs`
+//! itself and asserts every one is classified in a table above.
 //!
 //! Note on POST bodies: axum runs extractors in declaration order and every
 //! protected handler declares `AuthedAccount` *before* its `Json` body, so an
@@ -330,16 +331,30 @@ async fn stripe_webhook_is_gated_on_signature_not_api_key() {
 #[tokio::test]
 async fn route_tables_cover_every_route() {
     // The audit is only as good as its coverage: a new route in `lib.rs` that
-    // nobody added a row for would otherwise sail through unexamined. Pin the
-    // total so adding a route forces a deliberate public-or-protected call.
+    // nobody added a row for would otherwise sail through unexamined.
+    //
+    // The router count has to come from `lib.rs` itself. Comparing the table
+    // sizes against a hand-written total would be a tautology over constants
+    // in *this* file — it would still pass with a brand-new unclassified route
+    // in the router, which is precisely the case it exists to catch. axum 0.7
+    // exposes no route enumeration (`Router::has_routes` is a bool), so we
+    // count the `.route(` calls in the source instead.
     //
     // 2 = the admin routes, covered by `admin_routes_reject_without_admin_key`.
     const ADMIN_ROUTES: usize = 2;
-    const TOTAL_ROUTES: usize = 25;
+
+    let src = include_str!("../src/lib.rs");
+    let in_router = src
+        .split_once("pub fn router_with_rate_limit")
+        .expect("router_with_rate_limit must exist in lib.rs")
+        .1;
+    let router_routes = in_router.matches(".route(").count();
+
+    let classified = PROTECTED.len() + PUBLIC.len() + ADMIN_ROUTES + SIGNATURE_GATED_ROUTES;
     assert_eq!(
-        PROTECTED.len() + PUBLIC.len() + ADMIN_ROUTES + SIGNATURE_GATED_ROUTES,
-        TOTAL_ROUTES,
-        "a route was added or removed in lib.rs without updating the auth audit \
-         tables — classify it as protected, public, admin, or signature-gated"
+        classified, router_routes,
+        "lib.rs wires {router_routes} routes but the auth audit classifies \
+         {classified} — a route was added or removed without updating these \
+         tables. Classify it as protected, public, admin, or signature-gated."
     );
 }
