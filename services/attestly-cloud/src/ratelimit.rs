@@ -39,6 +39,15 @@
 //! budget, and the service sits behind a proxy where the peer address is the
 //! proxy's.
 //!
+//! ## Bounding the keyspace
+//!
+//! Keying on an unvalidated header has a cost: the limiter runs before auth,
+//! so a caller can mint a fresh bucket per request just by varying
+//! `x-api-key`, and `governor`'s keyed store never evicts on its own. Left
+//! alone, the layer we added to *bound* abuse would be an unbounded-memory
+//! vector. [`RateLimitService::sweep_if_due`] therefore reclaims fully
+//! refilled buckets on a fixed request cadence.
+//!
 //! ## Why `governor` directly rather than `tower_governor`
 //!
 //! `tower_governor` 0.8's `Service` impl requires
@@ -51,6 +60,7 @@
 //! need is small, so we use it directly and keep full control of the 429 body.
 
 use std::num::NonZeroU32;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -143,13 +153,22 @@ pub fn layer(per_minute: u32) -> RateLimitLayer {
         .allow_burst(per_minute);
     RateLimitLayer {
         limiter: Arc::new(RateLimiter::keyed(quota)),
+        since_sweep: Arc::new(AtomicU32::new(0)),
     }
 }
+
+/// Requests between stale-bucket sweeps. See [`RateLimitService::call`].
+///
+/// A sweep is an O(live keys) pass over a `DashMap`, so it must not run per
+/// request; every 1024 it is amortised to nothing while still bounding the map
+/// long before it can threaten a 256MB Fly machine.
+const SWEEP_EVERY: u32 = 1024;
 
 /// Tower layer applying the per-key token bucket.
 #[derive(Clone)]
 pub struct RateLimitLayer {
     limiter: Arc<Limiter>,
+    since_sweep: Arc<AtomicU32>,
 }
 
 impl<S> tower::Layer<S> for RateLimitLayer {
@@ -159,6 +178,7 @@ impl<S> tower::Layer<S> for RateLimitLayer {
         RateLimitService {
             inner,
             limiter: self.limiter.clone(),
+            since_sweep: self.since_sweep.clone(),
         }
     }
 }
@@ -167,6 +187,34 @@ impl<S> tower::Layer<S> for RateLimitLayer {
 pub struct RateLimitService<S> {
     inner: S,
     limiter: Arc<Limiter>,
+    since_sweep: Arc<AtomicU32>,
+}
+
+impl<S> RateLimitService<S> {
+    /// Drop bucket state that has become indistinguishable from a fresh one,
+    /// once every [`SWEEP_EVERY`] requests.
+    ///
+    /// `governor`'s keyed store never evicts on its own — it keeps one entry
+    /// per key it has ever seen, and its own docs flag this housekeeping as
+    /// the caller's job. That matters here because the limiter runs *before*
+    /// auth (deliberately — a flood must not reach the Argon2 scan), so the
+    /// key is an unvalidated header: anyone can mint a new bucket per request
+    /// by varying `x-api-key`. Without this, the layer added to bound abuse
+    /// would itself be an unbounded-memory vector.
+    ///
+    /// Only buckets whose tokens have fully refilled are dropped, so a caller
+    /// mid-burst never has their budget forgiven by a sweep.
+    fn sweep_if_due(&self) {
+        // Relaxed is right: the counter only paces an optimisation, so a
+        // racing pair of requests landing on the same tick costs at most one
+        // extra (or one skipped) sweep.
+        let n = self.since_sweep.fetch_add(1, Ordering::Relaxed);
+        if n >= SWEEP_EVERY {
+            self.since_sweep.store(0, Ordering::Relaxed);
+            self.limiter.retain_recent();
+            self.limiter.shrink_to_fit();
+        }
+    }
 }
 
 impl<S, ReqBody> tower::Service<Request<ReqBody>> for RateLimitService<S>
@@ -188,6 +236,7 @@ where
     }
 
     fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
+        self.sweep_if_due();
         let key = bucket_key(&req);
         if self.limiter.check_key(&key).is_err() {
             // Over budget: refuse without touching the handler, so a flood
@@ -254,6 +303,80 @@ mod tests {
     fn rate_limited_maps_to_429() {
         let resp = ApiError::RateLimited.into_response();
         assert_eq!(resp.status(), axum::http::StatusCode::TOO_MANY_REQUESTS);
+    }
+
+    /// A `tower::Service` that answers everything 200, so the tests below
+    /// exercise the layer through its real `call` path.
+    #[derive(Clone)]
+    struct Ok200;
+
+    impl tower::Service<Request<Body>> for Ok200 {
+        type Response = axum::response::Response;
+        type Error = std::convert::Infallible;
+        type Future = std::future::Ready<Result<Self::Response, Self::Error>>;
+
+        fn poll_ready(
+            &mut self,
+            _: &mut std::task::Context<'_>,
+        ) -> std::task::Poll<Result<(), Self::Error>> {
+            std::task::Poll::Ready(Ok(()))
+        }
+
+        fn call(&mut self, _: Request<Body>) -> Self::Future {
+            std::future::ready(Ok(axum::http::StatusCode::OK.into_response()))
+        }
+    }
+
+    #[tokio::test]
+    async fn stale_buckets_are_reclaimed_so_the_keyspace_stays_bounded() {
+        use tower::{Layer, Service};
+
+        // `governor` never evicts on its own, and the limiter keys on an
+        // unvalidated header *before* auth runs — so without the sweep, an
+        // attacker varying `x-api-key` grows the map without bound. A high
+        // limit keeps the refill period short, so every bucket a request
+        // touches is fully refilled (and therefore reclaimable) almost
+        // immediately; the point under test is that the sweep runs at all.
+        let l = layer(60_000);
+        let mut svc = l.layer(Ok200);
+
+        let n = SWEEP_EVERY * 2;
+        for i in 0..n {
+            let req = Request::builder()
+                .uri("/v1/attestations")
+                .header("x-api-key", format!("bogus-{i}"))
+                .body(Body::empty())
+                .unwrap();
+            let _ = svc.call(req).await.unwrap();
+        }
+
+        assert!(
+            l.limiter.len() < n as usize,
+            "distinct-key buckets must be reclaimed, not retained forever \
+             (held {} of {n} after {} requests)",
+            l.limiter.len(),
+            n
+        );
+    }
+
+    #[test]
+    fn a_sweep_does_not_forgive_a_caller_mid_burst() {
+        // The sweep must only drop buckets that have fully refilled. If it
+        // dropped an in-use one, an attacker could reset their own budget by
+        // flooding distinct keys until a sweep fired.
+        let l = layer(2);
+        let key = "victim".to_string();
+        assert!(l.limiter.check_key(&key).is_ok());
+        assert!(l.limiter.check_key(&key).is_ok());
+        assert!(l.limiter.check_key(&key).is_err(), "budget spent");
+
+        l.limiter.retain_recent();
+        l.limiter.shrink_to_fit();
+
+        assert!(
+            l.limiter.check_key(&key).is_err(),
+            "a sweep must not hand back an exhausted budget"
+        );
     }
 
     #[test]
